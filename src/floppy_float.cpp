@@ -13,7 +13,7 @@ constexpr FT TwoSum(FT a, FT b, FT c) {
 }
 
 template <typename FT>
-TwiceWidthType<FT> UpMul(FT a, FT b, FT c) {
+constexpr TwiceWidthType<FT> UpMul(FT a, FT b, FT c) {
   auto da = static_cast<TwiceWidthType<FT>>(a);
   auto db = static_cast<TwiceWidthType<FT>>(b);
   auto dc = static_cast<TwiceWidthType<FT>>(c);
@@ -21,9 +21,56 @@ TwiceWidthType<FT> UpMul(FT a, FT b, FT c) {
   return r;
 }
 
+template <typename FT>
+constexpr TwiceWidthType<FT> UpDiv(FT a, FT b, FT c) {
+    auto da = static_cast<TwiceWidthType<FT>>(a);
+    auto db = static_cast<TwiceWidthType<FT>>(b);
+    auto dc = static_cast<TwiceWidthType<FT>>(c);
+    return dc * db - da;
+}
+
+template <typename FT>
+constexpr TwiceWidthType<FT> UpSqrt(FT a, FT b) {
+  auto da = static_cast<TwiceWidthType<FT>>(a);
+  auto db = static_cast<TwiceWidthType<FT>>(b);
+  auto r = db * db - da;
+  return r;
+}
+
+template <>
+void FloppyFloat::SetQnan<f16>(u16 val) {
+  qnan16_ = std::bit_cast<f16>(val);
+}
+
+template <>
+void FloppyFloat::SetQnan<f32>(u32 val) {
+  qnan32_ = std::bit_cast<f32>(val);
+}
+
+template <>
+void FloppyFloat::SetQnan<f64>(u64 val) {
+  qnan64_ = std::bit_cast<f64>(val);
+}
+
+template <>
+constexpr f16 FloppyFloat::GetQnan<f16>() {
+  return qnan16_;
+}
+
+template <>
+constexpr f32 FloppyFloat::GetQnan<f32>() {
+  return qnan32_;
+}
+
+template <>
+constexpr f64 FloppyFloat::GetQnan<f64>() {
+  return qnan64_;
+}
+
 FloppyFloat::FloppyFloat() {
-  qnan32 = std::bit_cast<f32>(0x7fc00000u);
-  qnan64 = std::bit_cast<f64>(0x7ff8000000000000ull);
+  SetQnan<f16>(0x7e00);
+  SetQnan<f32>(0x7fc00000u);
+  SetQnan<f64>(0x7ff8000000000000ull);
 }
 
 template <typename FT, FloppyFloat::RoundingMode rm>
@@ -106,14 +153,6 @@ constexpr FT FloppyFloat::RoundResult([[maybe_unused]] FT residual, FT result) {
   return result;
 }
 
-void FloppyFloat::SetQnan32(u32 val) {
-  qnan32 = std::bit_cast<f32>(val);
-}
-
-void FloppyFloat::SetQnan64(u64 val) {
-  qnan64 = std::bit_cast<f64>(val);
-}
-
 template <typename FT, FloppyFloat::RoundingMode rm>
 FT FloppyFloat::Add(FT a, FT b) {
   FT c = a + b;
@@ -129,12 +168,12 @@ FT FloppyFloat::Add(FT a, FT b) {
     } else {  // NaN case.
       if (IsInf(a) && IsInf(b)) {
         invalid = true;
-        return qnan32;
+        return GetQnan<FT>();
       }
       if (IsSnan(a) || IsSnan(b))
         invalid = true;
       if (IsNan(a) || IsNan(b))
-        return qnan32;
+        return GetQnan<FT>();
     }
   }
 
