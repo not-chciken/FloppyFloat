@@ -1,3 +1,8 @@
+/**************************************************************************************************
+ * Apache License, Version 2.0
+ * Copyright (c) 2024 chciken/Niko Zurstraßen
+**************************************************************************************************/
+
 #include "floppy_float.h"
 
 #include <bit>
@@ -23,10 +28,10 @@ constexpr TwiceWidthType<FT> UpMul(FT a, FT b, FT c) {
 
 template <typename FT>
 constexpr TwiceWidthType<FT> UpDiv(FT a, FT b, FT c) {
-    auto da = static_cast<TwiceWidthType<FT>>(a);
-    auto db = static_cast<TwiceWidthType<FT>>(b);
-    auto dc = static_cast<TwiceWidthType<FT>>(c);
-    return dc * db - da;
+  auto da = static_cast<TwiceWidthType<FT>>(a);
+  auto db = static_cast<TwiceWidthType<FT>>(b);
+  auto dc = static_cast<TwiceWidthType<FT>>(c);
+  return dc * db - da;
 }
 
 template <typename FT>
@@ -74,46 +79,19 @@ FloppyFloat::FloppyFloat() {
 }
 
 template <typename FT, FloppyFloat::RoundingMode rm>
-constexpr FT RoundInf(FT result);
-
-template<>
-constexpr f32 RoundInf<f32, FloppyFloat::kRoundTiesToEven>(f32 result) {
-  return result;
-}
-
-template<>
-constexpr f32 RoundInf<f32, FloppyFloat::kRoundTowardPositive>(f32 result) {
-  return IsNegInf(result) ? nl<f32>::lowest() : result;
-}
-
-template<>
-constexpr f32 RoundInf<f32, FloppyFloat::kRoundTowardNegative>(f32 result) {
-  return IsPosInf(result) ? nl<f32>::max() : result;
-}
-
-template<>
-constexpr f32 RoundInf<f32, FloppyFloat::kRoundTowardZero>(f32 result) {
-  return IsNegInf(result) ? nl<f32>::lowest() : nl<f32>::max();
-}
-
-template<>
-constexpr f64 RoundInf<f64, FloppyFloat::kRoundTiesToEven>(f64 result) {
-  return result;
-}
-
-template<>
-constexpr f64 RoundInf<f64, FloppyFloat::kRoundTowardPositive>(f64 result) {
-  return IsNegInf(result) ? nl<f64>::lowest() : result;
-}
-
-template<>
-constexpr f64 RoundInf<f64, FloppyFloat::kRoundTowardNegative>(f64 result) {
-  return IsPosInf(result) ? nl<f64>::max() : result;
-}
-
-template<>
-constexpr f64 RoundInf<f64, FloppyFloat::kRoundTowardZero>(f64 result) {
-  return IsNegInf(result) ? nl<f64>::lowest() : nl<f64>::max();
+constexpr FT RoundInf(FT result) {
+  if constexpr (rm == FloppyFloat::kRoundTiesToEven) {
+    return result;
+  }
+  if constexpr (rm == FloppyFloat::kRoundTowardPositive) {
+    return IsNegInf(result) ? nl<FT>::lowest() : result;
+  }
+  if constexpr (rm == FloppyFloat::kRoundTowardNegative) {
+    return IsPosInf(result) ? nl<FT>::max() : result;
+  }
+  if constexpr (rm == FloppyFloat::kRoundTowardZero) {
+    return IsNegInf(result) ? nl<FT>::lowest() : nl<FT>::max();
+  }
 }
 
 template <typename FT, FloppyFloat::RoundingMode rm>
@@ -179,7 +157,7 @@ FT FloppyFloat::Add(FT a, FT b) {
 
   // See: IEEE 754-2019: 6.3 The sign bit
   if constexpr (rm == kRoundTowardNegative) {
-    if (IsZero(c) && IsPos(c)) {
+    if (IsPosZero(c)) {
       if (IsNeg(a) || IsNeg(b))
         c = -c;
     }
@@ -202,10 +180,16 @@ FT FloppyFloat::Add(FT a, FT b) {
   return c;
 }
 
+template f16 FloppyFloat::Add<f16, FloppyFloat::kRoundTiesToEven>(f16 a, f16 b);
+template f16 FloppyFloat::Add<f16, FloppyFloat::kRoundTowardPositive>(f16 a, f16 b);
+template f16 FloppyFloat::Add<f16, FloppyFloat::kRoundTowardNegative>(f16 a, f16 b);
+template f16 FloppyFloat::Add<f16, FloppyFloat::kRoundTowardZero>(f16 a, f16 b);
+
 template f32 FloppyFloat::Add<f32, FloppyFloat::kRoundTiesToEven>(f32 a, f32 b);
 template f32 FloppyFloat::Add<f32, FloppyFloat::kRoundTowardPositive>(f32 a, f32 b);
 template f32 FloppyFloat::Add<f32, FloppyFloat::kRoundTowardNegative>(f32 a, f32 b);
 template f32 FloppyFloat::Add<f32, FloppyFloat::kRoundTowardZero>(f32 a, f32 b);
+
 template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTiesToEven>(f64 a, f64 b);
 template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTowardPositive>(f64 a, f64 b);
 template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTowardNegative>(f64 a, f64 b);

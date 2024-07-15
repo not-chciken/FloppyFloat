@@ -97,6 +97,21 @@ TEST(UtilTests, IsPosInf) {
   ASSERT_EQ(IsPosInf(values[11]), false);
 }
 
+TEST(UtilTests, IsPosZero) {
+  ASSERT_EQ(IsPosZero(values[0]), false);
+  ASSERT_EQ(IsPosZero(values[1]), false);
+  ASSERT_EQ(IsPosZero(values[2]), true);
+  ASSERT_EQ(IsPosZero(values[3]), false);
+  ASSERT_EQ(IsPosZero(values[4]), false);
+  ASSERT_EQ(IsPosZero(values[5]), false);
+  ASSERT_EQ(IsPosZero(values[6]), false);
+  ASSERT_EQ(IsPosZero(values[7]), false);
+  ASSERT_EQ(IsPosZero(values[8]), false);
+  ASSERT_EQ(IsPosZero(values[9]), false);
+  ASSERT_EQ(IsPosZero(values[10]), false);
+  ASSERT_EQ(IsPosZero(values[11]), false);
+}
+
 TEST(UtilTests, IsSnan) {
   ASSERT_EQ(IsSnan(values[0]), false);
   ASSERT_EQ(IsSnan(values[1]), false);
