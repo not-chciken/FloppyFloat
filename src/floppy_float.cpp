@@ -78,6 +78,14 @@ FloppyFloat::FloppyFloat() {
   SetQnan<f64>(0x7ff8000000000000ull);
 }
 
+void FloppyFloat::ClearFlags() {
+  invalid = false;
+  division_by_zero = false;
+  overflow = false;
+  underflow = false;
+  inexact = false;
+}
+
 template <typename FT, FloppyFloat::RoundingMode rm>
 constexpr FT RoundInf(FT result) {
   if constexpr (rm == FloppyFloat::kRoundTiesToEven) {

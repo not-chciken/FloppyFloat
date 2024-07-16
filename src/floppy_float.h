@@ -30,6 +30,8 @@ class FloppyFloat {
 
   FloppyFloat();
 
+  void ClearFlags();
+
   template <typename FT>
   void SetQnan(typename FloatToUint<FT>::type val);
 
