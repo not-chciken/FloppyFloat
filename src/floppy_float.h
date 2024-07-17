@@ -47,7 +47,25 @@ class FloppyFloat {
   template <typename FT, RoundingMode rm = kRoundTiesToEven>
   FT Mul(FT a, FT b);
   template <typename FT, RoundingMode rm = kRoundTiesToEven>
+  FT Div(FT a, FT b);
+  template <typename FT, RoundingMode rm = kRoundTiesToEven>
   FT Sqrt(FT a);
+
+  template <typename FT>
+  bool Eq(FT a, FT b, bool quiet);
+  template <typename FT>
+  bool Le(FT a, FT b, bool quiet);
+  template <typename FT>
+  bool Lt(FT a, FT b, bool quiet);
+
+  template <typename FT>
+  FT Maxx86(FT a, FT b);  // x86 legacy maximum (see "maxss/maxsd");
+  template <typename FT>
+  FT Minx86(FT a, FT b);  // x86 legacy minimum (see "minss/minsd");
+  template <typename FT>
+  FT MaximumNumber(FT a, FT b);
+  template <typename FT>
+  FT MinimumNumber(FT a, FT b);
 
   void SetupToArm();
   void SetupToRiscv();
