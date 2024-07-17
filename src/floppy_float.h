@@ -11,7 +11,6 @@
 
 class FloppyFloat {
  public:
-
   // See IEEE 754-2019: 4.3 Rounding-direction attributes
   enum RoundingMode {
     kRoundTiesToEven,
@@ -28,7 +27,8 @@ class FloppyFloat {
   bool underflow;
   bool inexact;
 
-  bool propagate_nan;
+  enum NanPropagationSchemes { kNanPropRiscv, kNanPropX86sse } nan_propagation_scheme;
+  bool tininess_before_rounding = false;
 
   FloppyFloat();
 
@@ -46,10 +46,18 @@ class FloppyFloat {
   FT Sub(FT a, FT b);
   template <typename FT, RoundingMode rm = kRoundTiesToEven>
   FT Mul(FT a, FT b);
+  template <typename FT, RoundingMode rm = kRoundTiesToEven>
+  FT Sqrt(FT a);
 
-protected:
+  void SetupToArm();
+  void SetupToRiscv();
+  void SetupTox86();
+
+ protected:
   template <typename FT, typename TFT, RoundingMode rm>
   constexpr FT RoundResult(TFT residual, FT result);
+  template <typename FT>
+  constexpr FT PropagateNan(FT a, FT b);
 
   f16 qnan16_;
   f32 qnan32_;

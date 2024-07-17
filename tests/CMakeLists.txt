@@ -7,6 +7,7 @@ add_custom_target(tests)
 
 add_executable(test_utils test_utils.cpp)
 add_executable(test_core test_core.cpp)
+add_executable(test_x86 test_x86.cpp)
 
 set(TEST_INCLUDE_PATHS ${CMAKE_SOURCE_DIR}/src)
 set(TEST_LIBS ${CMAKE_BINARY_DIR}/libFloppyFloatTest.a -lgtest -lgcov)
@@ -25,6 +26,7 @@ endmacro()
 
 create_test_case(test_utils)
 create_test_case(test_core)
+create_test_case(test_x86)
 
 # Comparions against Berkely SoftFloat
 add_executable(test_softfloat test_softfloat.cpp)

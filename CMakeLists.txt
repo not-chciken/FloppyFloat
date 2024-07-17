@@ -3,7 +3,14 @@
 # Copyright (c) 2024 chciken/Niko Zurstraßen
 ######################################################
 
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.10.1)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "13.1")
+    message(FATAL_ERROR "Insufficient gcc version (${CMAKE_CXX_COMPILER_VERSION}). Need at least 13.1.")
+  endif()
+endif()
+
 project(FloppyFloat VERSION 0.0.1)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

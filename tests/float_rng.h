@@ -182,6 +182,10 @@ class FloatRng {
     values_.push_back(nl<FT>::max());
     values_.push_back(nl<FT>::max());
     values_.push_back(nl<FT>::lowest());
+    values_.push_back(CreateQnanWithPayload<FT>(1u));
+    values_.push_back(CreateQnanWithPayload<FT>(1u));
+    values_.push_back(CreateQnanWithPayload<FT>(128u));
+    values_.push_back(CreateQnanWithPayload<FT>(37u));
   }
 
   FT Gen() {
@@ -189,6 +193,10 @@ class FloatRng {
       return values_[index_++];
 
     return std::bit_cast<FT>(dist_(engine_));
+  }
+
+  void Reset() {
+    index_ = 0;
   }
 
  private:
