@@ -28,6 +28,8 @@ class FloppyFloat {
   bool underflow;
   bool inexact;
 
+  bool propagate_nan;
+
   FloppyFloat();
 
   void ClearFlags();
@@ -40,10 +42,14 @@ class FloppyFloat {
 
   template <typename FT, RoundingMode rm = kRoundTiesToEven>
   FT Add(FT a, FT b);
+  template <typename FT, RoundingMode rm = kRoundTiesToEven>
+  FT Sub(FT a, FT b);
+  template <typename FT, RoundingMode rm = kRoundTiesToEven>
+  FT Mul(FT a, FT b);
 
 protected:
-  template <typename FT, RoundingMode rm>
-  constexpr FT RoundResult(FT residual, FT result);
+  template <typename FT, typename TFT, RoundingMode rm>
+  constexpr FT RoundResult(TFT residual, FT result);
 
   f16 qnan16_;
   f32 qnan32_;
