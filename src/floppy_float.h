@@ -29,6 +29,7 @@ class FloppyFloat {
 
   enum NanPropagationSchemes { kNanPropRiscv, kNanPropX86sse } nan_propagation_scheme;
   bool tininess_before_rounding = false;
+  bool invalid_fma = true; // If true, FMA raises invalid for "∞ × 0 + qNaN". See IEE 754 ("7.2 Invalid operation").
 
   FloppyFloat();
 
@@ -49,6 +50,8 @@ class FloppyFloat {
   FT Div(FT a, FT b);
   template <typename FT, RoundingMode rm = kRoundTiesToEven>
   FT Sqrt(FT a);
+  template <typename FT, RoundingMode rm = kRoundTiesToEven>
+  FT Fma(FT a, FT b, FT c);
 
   template <typename FT>
   bool Eq(FT a, FT b, bool quiet);
