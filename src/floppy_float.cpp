@@ -20,7 +20,18 @@ constexpr FT TwoSum(FT a, FT b, FT c) {
 }
 
 template <typename FT>
+constexpr FT UpMulFma(FT a, FT b, FT c) {
+  auto r = std::fma(a, b, -c);
+  return r;
+}
+
+template <typename FT>
 constexpr TwiceWidthType<FT>::type UpMul(FT a, FT b, FT c) {
+  if constexpr (std::is_same_v<FT, f64>) {
+    if (std::abs(c) > 4.008336720017946e-292) [[likely]]
+      return UpMulFma<FT>(a, b, c);
+  }
+
   auto da = static_cast<TwiceWidthType<FT>::type>(a);
   auto db = static_cast<TwiceWidthType<FT>::type>(b);
   auto dc = static_cast<TwiceWidthType<FT>::type>(c);
@@ -29,13 +40,18 @@ constexpr TwiceWidthType<FT>::type UpMul(FT a, FT b, FT c) {
 }
 
 template <typename FT>
-constexpr FT UpMulFma(FT a, FT b, FT c) {
-  auto r = std::fma(a, b, -c);
-  return r;
+constexpr FT UpDivFma(FT a, FT b, FT c) {
+  auto r = std::fma(-c, b, a);
+  return std::signbit(b) ? -r : r;
 }
 
 template <typename FT>
 constexpr TwiceWidthType<FT>::type UpDiv(FT a, FT b, FT c) {
+  if constexpr (std::is_same_v<FT, f64>) {
+    if (std::abs(a) > 4.008336720017946e-292) [[likely]]
+      return UpDivFma<FT>(a, b, c);
+  }
+
   auto da = static_cast<TwiceWidthType<FT>::type>(a);
   auto db = static_cast<TwiceWidthType<FT>::type>(b);
   auto dc = static_cast<TwiceWidthType<FT>::type>(c);
@@ -44,22 +60,20 @@ constexpr TwiceWidthType<FT>::type UpDiv(FT a, FT b, FT c) {
 }
 
 template <typename FT>
-constexpr FT UpDivFma(FT a, FT b, FT c) {
-  auto r = std::fma(c, b, -a);
+constexpr FT UpSqrtFma(FT a, FT b) {
+  auto r = std::fma(-b, b, a);
   return r;
 }
 
 template <typename FT>
 constexpr TwiceWidthType<FT>::type UpSqrt(FT a, FT b) {
+  if constexpr (std::is_same_v<FT, f64>) {
+    if (std::abs(a) > 4.008336720017946e-292) [[likely]]
+      return UpSqrtFma<FT>(a, b);
+  }
   auto da = static_cast<TwiceWidthType<FT>::type>(a);
   auto db = static_cast<TwiceWidthType<FT>::type>(b);
   auto r = da - db * db;
-  return r;
-}
-
-template <typename FT>
-constexpr FT UpSqrtFma(FT a, FT b) {
-  auto r = std::fma(b, b, -a);
   return r;
 }
 
@@ -97,6 +111,8 @@ FloppyFloat::FloppyFloat() {
   SetQnan<f16>(0x7e00u);
   SetQnan<f32>(0x7fc00000u);
   SetQnan<f64>(0x7ff8000000000000ull);
+  ClearFlags();
+  tininess_before_rounding = false;
 }
 
 void FloppyFloat::ClearFlags() {

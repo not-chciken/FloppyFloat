@@ -36,7 +36,6 @@ class FloppyFloat {
 
   template <typename FT>
   void SetQnan(typename FloatToUint<FT>::type val);
-
   template <typename FT>
   constexpr FT GetQnan();
 
