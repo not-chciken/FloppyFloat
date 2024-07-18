@@ -95,7 +95,8 @@ struct QuietBit<f64> {
 
 template <typename FT>
 constexpr FT CreateQnanWithPayload(typename FloatToUint<FT>::type payload) {
-  decltype(payload) u;
+  using UT = decltype(payload);
+  UT u;
   if constexpr (std::is_same<FT, f16>::value) {
     u = 0x7e00u;
   } else if constexpr (std::is_same<FT, f32>::value) {
@@ -105,7 +106,7 @@ constexpr FT CreateQnanWithPayload(typename FloatToUint<FT>::type payload) {
   } else {
     static_assert("Type needs to be f16, f32, or f64");
   }
-  return std::bit_cast<FT>(u | payload);
+  return std::bit_cast<FT>((UT)(u | payload));
 }
 
 template <typename FT>
