@@ -9,14 +9,12 @@
 #include <bit>
 #include <cfenv>
 #include <cmath>
-#include <iostream>
 
 #include "float_rng.h"
 #include "floppy_float.h"
 #include "utils.h"
 
-//constexpr i32 kNumIterations = 20000;
-constexpr i32 kNumIterations = 100;
+constexpr i32 kNumIterations = 20000;
 constexpr i32 kRngSeed = 42;
 
 TEST(x86Tests, Addf32) {
@@ -662,8 +660,6 @@ TEST(x86Tests, Min64) {
     }
   }
 }
-
-
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
