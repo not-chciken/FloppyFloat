@@ -285,6 +285,56 @@ TEST(x86Tests, Sqrt32) {
   }
 }
 
+TEST(x86Tests, Fma32) {
+  FloppyFloat ff;
+  ff.SetupTox86();
+
+  for (auto rm : {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO}) {
+    FloatRng<f32> float_rng(kRngSeed);
+    f32 a{float_rng.Gen()};
+    f32 b{float_rng.Gen()};
+    f32 c{float_rng.Gen()};
+    for (i32 i = 0; i < kNumIterations; ++i) {
+      f32 ff_result;
+
+      ff.ClearFlags();
+      switch (rm) {
+      case FE_TONEAREST:
+        ff_result = ff.Fma<f32, FloppyFloat::kRoundTiesToEven>(a, b, c);
+        break;
+      case FE_TOWARDZERO:
+        ff_result = ff.Fma<f32, FloppyFloat::kRoundTowardZero>(a, b, c);
+        break;
+      case FE_DOWNWARD:
+        ff_result = ff.Fma<f32, FloppyFloat::kRoundTowardNegative>(a, b, c);
+        break;
+      case FE_UPWARD:
+        ff_result = ff.Fma<f32, FloppyFloat::kRoundTowardPositive>(a, b, c);
+        break;
+      default:
+        break;
+      }
+
+      std::feclearexcept(FE_ALL_EXCEPT);
+      fesetround(rm);
+      f32 x86_result;
+      x86_result = std::fma(b,a,c);
+      fesetround(FE_TONEAREST);
+
+      ASSERT_EQ(std::bit_cast<u32>(x86_result), std::bit_cast<u32>(ff_result));
+      ASSERT_EQ(ff.invalid, static_cast<bool>(std::fetestexcept(FE_INVALID)));
+      ASSERT_EQ(ff.division_by_zero, static_cast<bool>(std::fetestexcept(FE_DIVBYZERO)));
+      ASSERT_EQ(ff.overflow, static_cast<bool>(std::fetestexcept(FE_OVERFLOW)));
+      ASSERT_EQ(ff.underflow, static_cast<bool>(std::fetestexcept(FE_UNDERFLOW)));
+      ASSERT_EQ(ff.inexact, static_cast<bool>(std::fetestexcept(FE_INEXACT)));
+
+      c = b;
+      b = a;
+      a = float_rng.Gen();
+    }
+  }
+}
+
 TEST(x86Tests, Addf64) {
   FloppyFloat ff;
   ff.SetupTox86();
