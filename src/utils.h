@@ -166,9 +166,15 @@ constexpr bool IsSnan(FT a) {
 }
 
 template <typename FT>
-constexpr bool IsSubnormal(FT a) {
+constexpr bool IsTiny(FT a) {
   static_assert(std::is_floating_point<FT>::value);
   return std::abs(a) < nl<FT>::min();
+}
+
+template <typename FT>
+constexpr bool IsSubnormal(FT a) {
+  static_assert(std::is_floating_point<FT>::value);
+  return (std::abs(a) < nl<FT>::min()) && !IsZero(a);
 }
 
 template <typename FT>

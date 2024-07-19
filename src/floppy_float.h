@@ -69,6 +69,12 @@ class FloppyFloat {
   template <typename FT>
   FT MinimumNumber(FT a, FT b);
 
+  template <typename FT>
+  u32 Class(FT a);
+
+  template <RoundingMode rm>
+  i32 F32ToI32(f32 val);
+
   void SetupToArm();
   void SetupToRiscv();
   void SetupTox86();

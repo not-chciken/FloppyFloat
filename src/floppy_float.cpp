@@ -365,7 +365,7 @@ FT FloppyFloat::Mul(FT a, FT b) {
         inexact = true;
     }
     if (!underflow) {
-      if (IsSubnormal(c)) [[unlikely]] {
+      if (IsTiny(c)) [[unlikely]] {
         auto r = UpMul<FT>(a, b, c);
         if (r != 0.)
           underflow = true;
@@ -376,7 +376,7 @@ FT FloppyFloat::Mul(FT a, FT b) {
     if (r != 0.) {
       inexact = true;
       c = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, c);
-      if (IsSubnormal(c)) [[unlikely]] {
+      if (IsTiny(c)) [[unlikely]] {
         if (r != 0.)
           underflow = true;
       }
@@ -437,7 +437,7 @@ FT FloppyFloat::Div(FT a, FT b) {
         inexact = true;
     }
     if (!underflow) {
-      if (IsSubnormal(c)) [[unlikely]] {
+      if (IsTiny(c)) [[unlikely]] {
         auto r = UpDiv<FT>(a, b, c);
         if (!IsZero(r))
           underflow = true;
@@ -448,7 +448,7 @@ FT FloppyFloat::Div(FT a, FT b) {
     if (!IsZero(r)) {
       inexact = true;
       c = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, c);
-      if (IsSubnormal(c)) [[unlikely]] {
+      if (IsTiny(c)) [[unlikely]] {
         if (!IsZero(r))
           underflow = true;
       }
@@ -561,7 +561,7 @@ FT FloppyFloat::Fma(FT a, FT b, FT c) {
         inexact = true;
     }
     if (!underflow) {
-      if (IsSubnormal(d)) [[unlikely]] {
+      if (IsTiny(d)) [[unlikely]] {
         auto r = UpFma<FT>(a, b, c, d);
         if (!IsZero(r))
           underflow = true;
@@ -572,7 +572,7 @@ FT FloppyFloat::Fma(FT a, FT b, FT c) {
     if (!IsZero(r)) {
       inexact = true;
       d = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, d);
-      if (IsSubnormal(d)) [[unlikely]] {
+      if (IsTiny(d)) [[unlikely]] {
         if (!IsZero(r))
           underflow = true;
       }
@@ -710,6 +710,64 @@ FT FloppyFloat::MinimumNumber(FT a, FT b) {
 template f16 FloppyFloat::MinimumNumber<f16>(f16 a, f16 b);
 template f32 FloppyFloat::MinimumNumber<f32>(f32 a, f32 b);
 template f64 FloppyFloat::MinimumNumber<f64>(f64 a, f64 b);
+
+template <FloppyFloat::RoundingMode rm>
+i32 FloppyFloat::F32ToI32(f32 a) {
+  if (IsNan(a) || (a >= 2147483648.f) || (a < -2147483648.f)) {
+    invalid = true;
+    return std::numeric_limits<i32>::min();
+  }
+
+  i32 ia;
+  if constexpr (rm == kRoundTowardZero) {
+    ia = static_cast<i32>(a); // C++ always truncates (i.e., rounds to zero).
+  } else if constexpr (rm == kRoundTiesToAway) {
+    ia = std::lround(a);
+  } else {
+    ia = std::lrint(a);
+  }
+
+  f32 r = static_cast<f32>(ia) - a;
+  if (r != 0.f)
+    inexact = true;
+
+  if constexpr (rm == kRoundTowardNegative) {
+    if (r > 0)
+      ia -= 1;
+  } else if constexpr (rm == kRoundTowardPositive) {
+    if (r < 0)
+      ia += 1;
+  }
+
+  return ia;
+}
+
+template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTiesToEven>(f32 a);
+template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardPositive>(f32 a);
+template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardNegative>(f32 a);
+template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardZero>(f32 a);
+template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTiesToAway>(f32 a);
+
+template <typename FT>
+u32 FloppyFloat::Class(FT a) {
+  bool sign = std::signbit(a);
+  bool is_inf = IsInf(a);
+  bool is_tiny = IsTiny(a);
+  bool is_zero = IsZero(a);
+  bool is_subn = IsSubnormal(a);
+
+  return
+      (sign && is_inf)               << 0 |
+      (sign && !is_inf && !is_tiny)  << 1 |
+      (sign && is_subn)              << 2 |
+      (sign && is_zero)              << 3 |
+      (!sign && is_zero)             << 4 |
+      (!sign && is_subn)             << 5 |
+      (!sign && !is_inf && !is_tiny) << 6 |
+      (!sign && is_inf)              << 7 |
+      (IsSnan(a))                    << 8 |
+      (IsNan(a) && !IsSnan(a))       << 9;
+}
 
 void FloppyFloat::SetupToArm() {
   SetQnan<f16>(0x7e00u);

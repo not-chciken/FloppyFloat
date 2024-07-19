@@ -182,6 +182,9 @@ class FloatRng {
     values_.push_back(nl<FT>::max());
     values_.push_back(nl<FT>::max());
     values_.push_back(nl<FT>::lowest());
+    values_.push_back(nl<FT>::quiet_NaN());
+    values_.push_back(nl<FT>::infinity());
+    values_.push_back((FT)0.);
     values_.push_back(CreateQnanWithPayload<FT>(1u));
     values_.push_back(CreateQnanWithPayload<FT>(1u));
     values_.push_back(CreateQnanWithPayload<FT>(128u));
