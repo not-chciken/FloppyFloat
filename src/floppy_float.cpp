@@ -748,6 +748,54 @@ template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardNegative>(f32 a);
 template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardZero>(f32 a);
 template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTiesToAway>(f32 a);
 
+template <FloppyFloat::RoundingMode rm>
+u32 FloppyFloat::F32ToU32(f32 a) {
+  // TODO: Continue here.
+  if (IsNan(a) || (a >= 4294967296.f) || (a < -1.f)) {
+    invalid = true;
+    return std::numeric_limits<i32>::min();
+  }
+
+  i32 ia;
+  if constexpr (rm == kRoundTowardZero) {
+    ia = static_cast<u32>(a); // C++ always truncates (i.e., rounds to zero).
+  } else if constexpr (rm == kRoundTiesToAway) {
+    ia = std::lround(a);
+  } else {
+    ia = std::lrint(a);
+  }
+
+  f32 r = static_cast<f32>(ia) - a;
+  if (r != 0.f)
+    inexact = true;
+
+  if constexpr (rm == kRoundTowardNegative) {
+    if (r > 0)
+      ia -= 1;
+  } else if constexpr (rm == kRoundTowardPositive) {
+    if (r < 0)
+      ia += 1;
+  }
+
+  return ia;
+}
+
+template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTiesToEven>(f32 a);
+template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTowardPositive>(f32 a);
+template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTowardNegative>(f32 a);
+template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTowardZero>(f32 a);
+template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTiesToAway>(f32 a);
+
+f64 FloppyFloat::F32ToF64(f32 a) {
+  if (IsNan(a)) {
+    if (!GetQuietBit(a))
+      invalid = true;
+    return PropagateNan(a);
+  }
+
+  return static_cast<f64>(a);
+}
+
 template <typename FT>
 u32 FloppyFloat::Class(FT a) {
   bool sign = std::signbit(a);
@@ -793,4 +841,16 @@ void FloppyFloat::SetupTox86() {
   tininess_before_rounding = false;
   invalid_fma = false;
   nan_propagation_scheme = kNanPropX86sse;
+}
+
+constexpr f64 FloppyFloat::PropagateNan(f32 a) {
+  if (nan_propagation_scheme == kNanPropX86sse) {
+    u64 payload = (u64)GetPayload(a) << 29;
+    u64 result = (((u64)std::signbit(a)) << 63) | 0x7ff8000000000000ull | payload;
+    return std::bit_cast<f64>(result);
+  } else if (nan_propagation_scheme == kNanPropRiscv) {
+    return GetQnan<f64>();
+  } else {
+    throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
+  }
 }

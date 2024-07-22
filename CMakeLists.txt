@@ -24,7 +24,7 @@ set(CMAKE_CXX_STANDARD 23)
 
 add_library(floppy_float STATIC OBJECT src/floppy_float.cpp)
 set_property(TARGET floppy_float PROPERTY POSITION_INDEPENDENT_CODE 1)
-target_compile_options(floppy_float PUBLIC -O3 -march=native)
+target_compile_options(floppy_float PUBLIC -g -O3 -march=native)
 
 add_library(floppy_float_shared SHARED $<TARGET_OBJECTS:floppy_float>)
 set_target_properties(floppy_float_shared PROPERTIES OUTPUT_NAME "FloppyFloat")

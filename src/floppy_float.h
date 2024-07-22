@@ -72,8 +72,11 @@ class FloppyFloat {
   template <typename FT>
   u32 Class(FT a);
 
-  template <RoundingMode rm>
-  i32 F32ToI32(f32 val);
+  template <RoundingMode rm = kRoundTiesToEven>
+  i32 F32ToI32(f32 a);
+  template <RoundingMode rm = kRoundTiesToEven>
+  u32 F32ToU32(f32 a);
+  f64 F32ToF64(f32 a);
 
   void SetupToArm();
   void SetupToRiscv();
@@ -84,6 +87,7 @@ class FloppyFloat {
   constexpr FT RoundResult(TFT residual, FT result);
   template <typename FT>
   constexpr FT PropagateNan(FT a, FT b);
+  constexpr f64 PropagateNan(f32 a);
 
   f16 qnan16_;
   f32 qnan32_;

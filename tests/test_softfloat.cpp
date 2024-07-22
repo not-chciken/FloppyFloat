@@ -174,7 +174,118 @@ TEST(SoftFloatTests, F32ToI32) {
 
       i32 sf_result = ::f32_to_i32(valuesfa, rm, true);
 
-      //std::cout << i << " " << sf_result << " " << valuefa << std::endl;
+      ASSERT_EQ(ff_result, sf_result);
+      ASSERT_EQ(ff.invalid, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_invalid));
+      ASSERT_EQ(ff.division_by_zero, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_infinite));
+      ASSERT_EQ(ff.overflow, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_overflow));
+      ASSERT_EQ(ff.underflow, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_underflow));
+      ASSERT_EQ(ff.inexact, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_inexact));
+
+      softfloat_exceptionFlags = 0;
+      ff.ClearFlags();
+
+      valuefa = float_rng.Gen();
+      valuesfa.v = std::bit_cast<u32>(valuefa);
+    }
+  }
+}
+
+TEST(SoftFloatTests, F32ToU32) {
+  FloppyFloat ff;
+  FloatRng<f32> float_rng(kRngSeed);
+  ff.SetupTox86();
+
+  std::array<int, 5> rounding_modes = {::softfloat_round_near_even, ::softfloat_round_minMag, ::softfloat_round_min,
+                                       ::softfloat_round_max, ::softfloat_round_near_maxMag};
+
+  for (auto rm : rounding_modes) {
+    ::softfloat_roundingMode = rm;
+    softfloat_exceptionFlags = 0;
+
+    f32 valuefa{float_rng.Gen()};
+    float32_t valuesfa{std::bit_cast<u32>(valuefa)};
+
+    for (i32 i = 0; i < kNumIterations; ++i) {
+      u32 ff_result;
+
+      switch (rm) {
+      case ::softfloat_round_near_even:
+        ff_result = std::bit_cast<u32>(ff.F32ToU32<FloppyFloat::kRoundTiesToEven>(valuefa));
+        break;
+      case ::softfloat_round_minMag:
+        ff_result = std::bit_cast<u32>(ff.F32ToU32<FloppyFloat::kRoundTowardZero>(valuefa));
+        break;
+      case ::softfloat_round_min:
+        ff_result = std::bit_cast<u32>(ff.F32ToU32<FloppyFloat::kRoundTowardNegative>(valuefa));
+        break;
+      case ::softfloat_round_max:
+        ff_result = std::bit_cast<u32>(ff.F32ToU32<FloppyFloat::kRoundTowardPositive>(valuefa));
+        break;
+      case ::softfloat_round_near_maxMag:
+        ff_result = std::bit_cast<u32>(ff.F32ToU32<FloppyFloat::kRoundTiesToAway>(valuefa));
+        break;
+      default:
+        break;
+      }
+
+      uint_fast32_t sf_result = ::f32_to_ui32(valuesfa, rm, true);
+
+      std::cout << std::hex << sf_result << " " << ff_result << " " << valuesfa.v << std::endl;
+      ASSERT_EQ(ff_result, sf_result);
+      ASSERT_EQ(ff.invalid, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_invalid));
+      ASSERT_EQ(ff.division_by_zero, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_infinite));
+      ASSERT_EQ(ff.overflow, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_overflow));
+      ASSERT_EQ(ff.underflow, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_underflow));
+      ASSERT_EQ(ff.inexact, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_inexact));
+
+      softfloat_exceptionFlags = 0;
+      ff.ClearFlags();
+
+      valuefa = float_rng.Gen();
+      valuesfa.v = std::bit_cast<u32>(valuefa);
+    }
+  }
+}
+
+TEST(SoftFloatTests, F32ToF64) {
+  FloppyFloat ff;
+  FloatRng<f32> float_rng(kRngSeed);
+  ff.SetupTox86();
+
+  std::array<int, 5> rounding_modes = {::softfloat_round_near_even, ::softfloat_round_minMag, ::softfloat_round_min,
+                                       ::softfloat_round_max, ::softfloat_round_near_maxMag};
+
+  for (auto rm : rounding_modes) {
+    ::softfloat_roundingMode = rm;
+    softfloat_exceptionFlags = 0;
+
+    f32 valuefa{float_rng.Gen()};
+    float32_t valuesfa{std::bit_cast<u32>(valuefa)};
+
+    for (i32 i = 0; i < kNumIterations; ++i) {
+      u64 ff_result;
+
+      switch (rm) {
+      case ::softfloat_round_near_even:
+        ff_result = std::bit_cast<u64>(ff.F32ToF64(valuefa));
+        break;
+      case ::softfloat_round_minMag:
+        ff_result = std::bit_cast<u64>(ff.F32ToF64(valuefa));
+        break;
+      case ::softfloat_round_min:
+        ff_result = std::bit_cast<u64>(ff.F32ToF64(valuefa));
+        break;
+      case ::softfloat_round_max:
+        ff_result = std::bit_cast<u64>(ff.F32ToF64(valuefa));
+        break;
+      case ::softfloat_round_near_maxMag:
+        ff_result = std::bit_cast<u64>(ff.F32ToF64(valuefa));
+        break;
+      default:
+        break;
+      }
+
+      u64 sf_result = ::f32_to_f64(valuesfa).v;
       ASSERT_EQ(ff_result, sf_result);
       ASSERT_EQ(ff.invalid, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_invalid));
       ASSERT_EQ(ff.division_by_zero, static_cast<bool>(::softfloat_exceptionFlags & softfloat_flag_infinite));

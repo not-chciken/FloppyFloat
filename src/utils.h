@@ -109,6 +109,16 @@ constexpr FT CreateQnanWithPayload(typename FloatToUint<FT>::type payload) {
   return std::bit_cast<FT>((UT)(u | payload));
 }
 
+constexpr u32 GetPayload(f32 a) {
+  return std::bit_cast<u32>(a) & 0x003fffffu;
+}
+
+template <typename FT>
+constexpr bool GetQuietBit(FT a) {
+  static_assert(std::is_floating_point<FT>::value);
+  return QuietBit<FT>::u & std::bit_cast<typename FloatToUint<FT>::type>(a);
+}
+
 template <typename FT>
 constexpr bool IsInf(FT a) {
   static_assert(std::is_floating_point<FT>::value);
