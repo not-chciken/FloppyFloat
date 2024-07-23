@@ -28,6 +28,7 @@ class FloppyFloat {
   bool inexact;
 
   enum NanPropagationSchemes { kNanPropRiscv, kNanPropX86sse } nan_propagation_scheme;
+  enum ConversionLimits { kLimitsRiscv, kLimitsx86, kLimitsArm } conversion_limits;
   bool tininess_before_rounding = false;
   bool invalid_fma = true; // If true, FMA raises invalid for "∞ × 0 + qNaN". See IEE 754 ("7.2 Invalid operation").
 
@@ -53,12 +54,12 @@ class FloppyFloat {
   template <typename FT, RoundingMode rm = kRoundTiesToEven>
   FT Fma(FT a, FT b, FT c);
 
-  template <typename FT>
-  bool Eq(FT a, FT b, bool quiet);
-  template <typename FT>
-  bool Le(FT a, FT b, bool quiet);
-  template <typename FT>
-  bool Lt(FT a, FT b, bool quiet);
+  template <typename FT, bool quiet>
+  bool Eq(FT a, FT b);
+  template <typename FT, bool quiet>
+  bool Le(FT a, FT b);
+  template <typename FT, bool quiet>
+  bool Lt(FT a, FT b);
 
   template <typename FT>
   FT Maxx86(FT a, FT b);  // x86 legacy maximum (see "maxss/maxsd");
@@ -74,9 +75,13 @@ class FloppyFloat {
 
   template <RoundingMode rm = kRoundTiesToEven>
   i32 F32ToI32(f32 a);
+  // f32 F32ToI64(f32 a); TODO
   template <RoundingMode rm = kRoundTiesToEven>
   u32 F32ToU32(f32 a);
+  // f32 F32ToU64(f32 a);
+  // f32 F32ToF16(f32 a); TODO
   f64 F32ToF64(f32 a);
+
 
   void SetupToArm();
   void SetupToRiscv();
