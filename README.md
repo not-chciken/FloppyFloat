@@ -24,13 +24,15 @@ At the moment, the following functions and corresponding rounding modes are impl
 | Function           | RNE | RTZ | RDN | RUP | RMM |
 |--------------------|-----|-----|-----|-----|-----|
 | Add<f16,f32,f64>   | X   | X   | X   | X   | X   |
-| Sub<f16,f32,f64>   | X   | X   | X   | X   | O   |
+| Sub<f16,f32,f64>   | X   | X   | X   | X   | X   |
 | Mul<f16,f32,f64>   | X   | X   | X   | X   | O   |
 | Div<f16,f32,f64>   | X   | X   | X   | X   | O   |
 | Sqrt<f16,f32,f64>  | X   | X   | X   | X   | O   |
-| Fma<f16,f32,f64>   | X   | X   | X   | X   | O   |
+| Fma<f16,f32>       | X   | X   | X   | X   | O   |
 | F32ToI32           | X   | X   | X   | X   | X   |
+| F32ToI64           | X   | X   | X   | X   | X   |
 | F32ToU32           | X   | X   | X   | X   | X   |
+| F32ToU64           | X   | X   | X   | X   | X   |
 | F32ToF64           | X   | X   | X   | X   | X   |
 
 Eq<f16,f32,f64>, Le<f16,f32,f64>, Lt<f16,f32,f64>, MinimumNumber<f16,f32,f64>, MaximumNumber<f16,f32,f64>
