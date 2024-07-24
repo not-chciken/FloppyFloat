@@ -361,7 +361,22 @@ FT FloppyFloat::Sub(FT a, FT b) {
     FT r = TwoSum(a, -b, c);
     if (r != 0) {
       inexact = true;
-      c = RoundResult<FT, FT, rm>(r, c);
+      if constexpr (rm == kRoundTiesToAway) {
+        FT cc = ClearSignificand<FT>(c);
+        FT r_scaled = GetRScaled<FT>(r);
+
+        if (-cc == r_scaled) [[unlikely]] {
+          if (r < 0. && c > 0.) {
+            c = NextUpNoNegZero(c);
+            overflow = IsPosInf(c) ? true : overflow;
+          } else if (r > 0. && c < 0.) {
+            c = NextDownNoPosZero(c);
+            overflow = IsNegInf(c) ? true : overflow;
+          }
+        }
+      } else {
+        c = RoundResult<FT, FT, rm>(r, c);
+      }
     }
   }
 
@@ -372,16 +387,19 @@ template f16 FloppyFloat::Sub<f16, FloppyFloat::kRoundTiesToEven>(f16 a, f16 b);
 template f16 FloppyFloat::Sub<f16, FloppyFloat::kRoundTowardPositive>(f16 a, f16 b);
 template f16 FloppyFloat::Sub<f16, FloppyFloat::kRoundTowardNegative>(f16 a, f16 b);
 template f16 FloppyFloat::Sub<f16, FloppyFloat::kRoundTowardZero>(f16 a, f16 b);
+template f16 FloppyFloat::Sub<f16, FloppyFloat::kRoundTiesToAway>(f16 a, f16 b);
 
 template f32 FloppyFloat::Sub<f32, FloppyFloat::kRoundTiesToEven>(f32 a, f32 b);
 template f32 FloppyFloat::Sub<f32, FloppyFloat::kRoundTowardPositive>(f32 a, f32 b);
 template f32 FloppyFloat::Sub<f32, FloppyFloat::kRoundTowardNegative>(f32 a, f32 b);
 template f32 FloppyFloat::Sub<f32, FloppyFloat::kRoundTowardZero>(f32 a, f32 b);
+template f32 FloppyFloat::Sub<f32, FloppyFloat::kRoundTiesToAway>(f32 a, f32 b);
 
 template f64 FloppyFloat::Sub<f64, FloppyFloat::kRoundTiesToEven>(f64 a, f64 b);
 template f64 FloppyFloat::Sub<f64, FloppyFloat::kRoundTowardPositive>(f64 a, f64 b);
 template f64 FloppyFloat::Sub<f64, FloppyFloat::kRoundTowardNegative>(f64 a, f64 b);
 template f64 FloppyFloat::Sub<f64, FloppyFloat::kRoundTowardZero>(f64 a, f64 b);
+template f64 FloppyFloat::Sub<f64, FloppyFloat::kRoundTiesToAway>(f64 a, f64 b);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
 FT FloppyFloat::Mul(FT a, FT b) {
@@ -819,6 +837,73 @@ template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardZero>(f32 a);
 template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTiesToAway>(f32 a);
 
 template <FloppyFloat::RoundingMode rm>
+i64 FloppyFloat::F32ToI64(f32 a) {
+  if (conversion_limits == kLimitsx86) {
+    if (IsNan(a) || (a >= 9223372036854775808.0f64) || (a < -9223372036854775808.0f64)) {
+      invalid = true;
+      return std::numeric_limits<i64>::min();
+    }
+  } else if (conversion_limits == kLimitsRiscv) {
+    if (IsNan(a)) {
+      invalid = true;
+      return std::numeric_limits<i64>::max();
+    }
+    if (a >= 9223372036854775808.0f64) {
+      invalid = true;
+      return std::numeric_limits<i64>::max();
+    }
+    if (a < -9223372036854775808.0f64) {
+      invalid = true;
+      return std::numeric_limits<i64>::min();
+    }
+  }
+
+  i64 ia;
+  if constexpr (rm == kRoundTowardZero) {
+    ia = static_cast<i64>(a); // C++ always truncates (i.e., rounds to zero).
+  } else if constexpr (rm == kRoundTiesToAway) {
+    ia = std::lround(a);
+  } else {
+    ia = std::lrint(a);
+  }
+
+  f32 r = static_cast<f32>(ia) - a;
+  if (r != 0.f)
+    inexact = true;
+
+  if constexpr (rm == kRoundTowardNegative) {
+    if (r > 0)
+      ia -= 1;
+  } else if constexpr (rm == kRoundTowardPositive) {
+    if (r < 0)
+      ia += 1;
+  }
+
+  return ia;
+}
+
+template i64 FloppyFloat::F32ToI64<FloppyFloat::kRoundTiesToEven>(f32 a);
+template i64 FloppyFloat::F32ToI64<FloppyFloat::kRoundTowardPositive>(f32 a);
+template i64 FloppyFloat::F32ToI64<FloppyFloat::kRoundTowardNegative>(f32 a);
+template i64 FloppyFloat::F32ToI64<FloppyFloat::kRoundTowardZero>(f32 a);
+template i64 FloppyFloat::F32ToI64<FloppyFloat::kRoundTiesToAway>(f32 a);
+
+template <typename FT, FloppyFloat::RoundingMode rm>
+bool ResultOutOfURange(FT a) {
+  if constexpr (rm == FloppyFloat::kRoundTowardZero || rm == FloppyFloat::kRoundTowardPositive) {
+    return a <= -1.f;
+  } else if constexpr (rm == FloppyFloat::kRoundTowardNegative) {
+    return true;
+  } else if constexpr (rm == FloppyFloat::kRoundTiesToEven) {
+    return a < -0.5f;
+  } else if constexpr (rm == FloppyFloat::kRoundTiesToAway) {
+    return a <= -0.5f;
+  } else {
+    static_assert("Using unsupported rounding mode");
+  }
+}
+
+template <FloppyFloat::RoundingMode rm>
 u32 FloppyFloat::F32ToU32(f32 a) {
   if (conversion_limits == kLimitsx86) {
     if (IsNan(a) || (a >= 4294967296.f) || (a < -1.f)) [[unlikely]] {
@@ -835,27 +920,10 @@ u32 FloppyFloat::F32ToU32(f32 a) {
       return std::numeric_limits<u32>::max();
     }
     if (a < 0.f) [[unlikely]] {
-      if constexpr (rm == kRoundTowardZero || rm == kRoundTowardPositive) {
-        if ((a <= -1.f))
-          invalid =true;
-        else
-          inexact = true;
-      }
-      if constexpr (rm == kRoundTowardNegative) {
+      if (ResultOutOfURange<f32, rm>(a))
         invalid =true;
-      }
-      if constexpr (rm == kRoundTiesToEven) {
-        if ((a < -0.5f))
-          invalid =true;
-        else
-          inexact = true;
-      }
-      if constexpr (rm == kRoundTiesToAway) {
-        if ((a <= -0.5f))
-          invalid =true;
-        else
-          inexact = true;
-      }
+      else
+        inexact = true;
       return std::numeric_limits<u32>::min();
     }
   }
@@ -864,12 +932,12 @@ u32 FloppyFloat::F32ToU32(f32 a) {
   if constexpr (rm == kRoundTowardZero) {
     ia = static_cast<u32>(a); // C++ always truncates (i.e., rounds to zero).
   } else if constexpr (rm == kRoundTiesToAway) {
-    ia = std::lround(a);
+    ia = static_cast<u32>(std::llround(a));
   } else {
-    ia = std::lrint(a);
+    ia = static_cast<u32>(std::llrint(a));
   }
 
-  f32 r = static_cast<u32>(ia) - a;
+  f32 r = static_cast<f32>(ia) - a;
   if (r != 0.f)
     inexact = true;
 
@@ -889,6 +957,70 @@ template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTowardPositive>(f32 a);
 template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTowardNegative>(f32 a);
 template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTowardZero>(f32 a);
 template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTiesToAway>(f32 a);
+
+template <FloppyFloat::RoundingMode rm>
+u64 FloppyFloat::F32ToU64(f32 a) {
+  if (conversion_limits == kLimitsx86) {
+    if (IsNan(a) || (a >= 18446744073709551616.0f64) || (a < -1.f)) [[unlikely]] {
+      invalid = true;
+      return std::numeric_limits<i64>::min();
+    }
+  } else if (conversion_limits == kLimitsRiscv) {
+    if (IsNan(a)) [[unlikely]] {
+      invalid = true;
+      return std::numeric_limits<u64>::max();
+    }
+    if (a >= 18446744073709551616.0f64) [[unlikely]] {
+      invalid = true;
+      return std::numeric_limits<u64>::max();
+    }
+    if (a < 0.f) [[unlikely]] {
+      if (ResultOutOfURange<f32, rm>(a))
+        invalid =true;
+      else
+        inexact = true;
+      return std::numeric_limits<u64>::min();
+    }
+  }
+
+  u64 ia = static_cast<u64>(a); // C++ always truncates (i.e., rounds to zero).
+
+  f32 r = static_cast<f32>(ia) - a;
+  if (r != 0.f)
+    inexact = true;
+
+  if constexpr (rm == kRoundTowardNegative) {
+    if (r > 0)
+      ia -= 1;
+  } else if constexpr (rm == kRoundTowardPositive) {
+    if (r < 0)
+      ia += 1;
+  } else {
+    if (r) {
+      f32 ia_p05 = static_cast<f32>(ia) + 0.5f32;
+      if constexpr (rm == kRoundTiesToEven) {
+        if (ia_p05 <= a) {
+          if (ia_p05 == a) [[unlikely]] {
+            if (!(ia % 2))
+              ia -= 1;
+          }
+          ia += 1;
+        }
+      } else if constexpr (rm == kRoundTiesToAway) {
+        if (ia_p05 <= a)
+          ia += 1;
+      }
+    }
+  }
+
+  return ia;
+}
+
+template u64 FloppyFloat::F32ToU64<FloppyFloat::kRoundTiesToEven>(f32 a);
+template u64 FloppyFloat::F32ToU64<FloppyFloat::kRoundTowardPositive>(f32 a);
+template u64 FloppyFloat::F32ToU64<FloppyFloat::kRoundTowardNegative>(f32 a);
+template u64 FloppyFloat::F32ToU64<FloppyFloat::kRoundTowardZero>(f32 a);
+template u64 FloppyFloat::F32ToU64<FloppyFloat::kRoundTiesToAway>(f32 a);
 
 f64 FloppyFloat::F32ToF64(f32 a) {
   if (IsNan(a)) {
