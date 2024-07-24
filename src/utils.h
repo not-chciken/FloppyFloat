@@ -60,6 +60,22 @@ struct FloatToUint<f64> {
 };
 
 template <typename T>
+struct FloatToInt;
+
+template <>
+struct FloatToInt<f16> {
+  using type = i16;
+};
+template <>
+struct FloatToInt<f32> {
+  using type = i32;
+};
+template <>
+struct FloatToInt<f64> {
+  using type = i64;
+};
+
+template <typename T>
 struct UintToFloat;
 
 template <>
@@ -92,6 +108,22 @@ template <>
 struct QuietBit<f64> {
   static constexpr u64 u = 0x0008000000000000ull;
 };
+
+template <typename FT>
+constexpr FT ClearSignificand(FT a) {
+  static_assert(std::is_floating_point<FT>::value);
+  auto u = std::bit_cast<typename FloatToUint<FT>::type>(a);
+  if constexpr (std::is_same_v<FT, f16>) {
+    u &= 0xfc00u;
+  } else if constexpr (std::is_same_v<FT, f32>) {
+    u &= 0xff800000u;
+  } else if constexpr (std::is_same_v<FT, f64>) {
+    u &= 0xfff0000000000000ull;
+  } else {
+    static_assert("Type needs to be f16, f32, or f64");
+  }
+  return std::bit_cast<FT>(u);
+}
 
 template <typename FT>
 constexpr FT CreateQnanWithPayload(typename FloatToUint<FT>::type payload) {
@@ -191,4 +223,18 @@ template <typename FT>
 constexpr bool IsZero(FT a) {
   static_assert(std::is_floating_point<FT>::value);
   return (a == -a);
+}
+
+template <typename FT>
+constexpr FT NextDownNoPosZero(FT a) {
+  auto au = std::bit_cast<typename FloatToInt<FT>::type>(a);
+  au -= a > 0. ? 1 : -1;  // Nextdown of result cannot be +0.
+  return std::bit_cast<FT>(au);
+}
+
+template <typename FT>
+constexpr FT NextUpNoNegZero(FT a) {
+  auto au = std::bit_cast<typename FloatToInt<FT>::type>(a);
+  au += a >= 0. ? 1 : -1;  // Nextup of result cannot be -0.
+  return std::bit_cast<FT>(au);
 }

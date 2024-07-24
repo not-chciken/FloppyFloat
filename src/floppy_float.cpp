@@ -12,10 +12,18 @@
 template <typename FT>
 constexpr FT TwoSum(FT a, FT b, FT c) {
   FT ad = c - b;
-  FT bd = c - a;
+  FT bd = c - ad;
   FT da = ad - a;
   FT db = bd - b;
   FT r = da + db;
+  return r;
+}
+
+template <typename FT>
+constexpr FT FastTwoSum(FT a, FT b, FT c) {
+  FT x = std::fabs(a) > std::fabs(b) ? a : b;
+  FT y = std::fabs(a) > std::fabs(b) ? b : a;
+  FT r = (c - x) - y;
   return r;
 }
 
@@ -146,6 +154,8 @@ constexpr FT RoundInf(FT result) {
     return IsPosInf(result) ? nl<FT>::max() : result;
   } else if constexpr (rm == FloppyFloat::kRoundTowardZero) {
     return IsNegInf(result) ? nl<FT>::lowest() : nl<FT>::max();
+  } else if constexpr (rm == FloppyFloat::kRoundTiesToAway) {
+    return result;
   } else {
     static_assert("Using unsupported rounding mode");
   }
@@ -157,29 +167,21 @@ constexpr FT FloppyFloat::RoundResult([[maybe_unused]] TFT residual, FT result) 
     // Nothing to do.
   } else if constexpr (rm == kRoundTowardPositive) {
     if (residual < 0.) {
-      auto uresult = std::bit_cast<typename FloatToUint<FT>::type>(result);
-      uresult += result >= 0. ? 1 : -1;  // Next up of result cannot be -0.
-      result = std::bit_cast<FT>(uresult);
-      overflow = (result == nl<FT>::infinity()) ? true : overflow;
+      result = NextUpNoNegZero(result);
+      overflow = IsPosInf(result) ? true : overflow;
     }
   } else if constexpr (rm == kRoundTowardNegative) {
     if (residual > 0.) {
-      auto uresult = std::bit_cast<typename FloatToUint<FT>::type>(result);
-      uresult -= result > 0. ? 1 : -1;  // Nextdown of result cannot be +0.
-      result = std::bit_cast<FT>(uresult);
-      overflow = (result == -nl<FT>::infinity()) ? true : overflow;
+      result = NextDownNoPosZero(result);
+      overflow = IsNegInf(result) ? true : overflow;
     }
   } else if constexpr (rm == kRoundTowardZero) {
-    if (residual < 0. && result < 0.) {
-      auto uresult = std::bit_cast<typename FloatToUint<FT>::type>(result);
-      uresult += result >= 0. ? 1 : -1;  // Nextup of result cannot be -0.
-      result = std::bit_cast<FT>(uresult);
-      overflow = (result == nl<FT>::infinity()) ? true : overflow;
+    if (residual < 0. && result < 0.) { // Fix a round-down.
+      result = NextUpNoNegZero(result);
+      overflow = IsPosInf(result) ? true : overflow;
     } else if (residual > 0 && result > 0) {  // Fix a round-up.
-      auto uresult = std::bit_cast<typename FloatToUint<FT>::type>(result);
-      uresult -= result > 0. ? 1 : -1;  // Nextdown of result cannot be +0.
-      result = std::bit_cast<FT>(uresult);
-      overflow = (result == -nl<FT>::infinity()) ? true : overflow;
+      result = NextDownNoPosZero(result);
+      overflow = IsNegInf(result) ? true : overflow;
     }
   } else {
     static_assert("Using unsupported rounding mode");
@@ -206,6 +208,33 @@ constexpr FT FloppyFloat::PropagateNan(FT a, FT b) {
   } else {
     throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
   }
+}
+
+constexpr f64 FloppyFloat::PropagateNan(f32 a) {
+  if (nan_propagation_scheme == kNanPropX86sse) {
+    u64 payload = (u64)GetPayload(a) << 29;
+    u64 result = (((u64)std::signbit(a)) << 63) | 0x7ff8000000000000ull | payload;
+    return std::bit_cast<f64>(result);
+  } else if (nan_propagation_scheme == kNanPropRiscv) {
+    return GetQnan<f64>();
+  } else {
+    throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
+  }
+}
+
+template <typename FT>
+FT GetRScaled(FT r) {
+  FT r_scaled;
+  if constexpr (std::is_same_v<FT, f16>) {
+    r_scaled = r * 2048.0f16; // = 2**11
+  } else if constexpr (std::is_same_v<FT, f32>) {
+    r_scaled = r * 16777216.0f32; // 2**24
+  } else if constexpr (std::is_same_v<FT, f64>) {
+    r_scaled = r * 9007199254740992.0f64; // 2**53
+  } else {
+    static_assert("Unsupported data type");
+  }
+  return r_scaled;
 }
 
 template <typename FT, FloppyFloat::RoundingMode rm>
@@ -247,10 +276,25 @@ FT FloppyFloat::Add(FT a, FT b) {
         inexact = true;
     }
   } else {
-    FT r = TwoSum(a, b, c);
+    FT r = TwoSum<FT>(a, b, c);
     if (r != 0) {
       inexact = true;
-      c = RoundResult<FT, FT, rm>(r, c);
+      if constexpr (rm == kRoundTiesToAway) {
+        FT cc = ClearSignificand<FT>(c);
+        FT r_scaled = GetRScaled<FT>(r);
+
+        if (-cc == r_scaled) [[unlikely]] {
+          if (r < 0. && c > 0.) {
+            c = NextUpNoNegZero(c);
+            overflow = IsPosInf(c) ? true : overflow;
+          } else if (r > 0. && c < 0.) {
+            c = NextDownNoPosZero(c);
+            overflow = IsNegInf(c) ? true : overflow;
+          }
+        }
+      } else {
+        c = RoundResult<FT, FT, rm>(r, c);
+      }
     }
   }
 
@@ -261,16 +305,19 @@ template f16 FloppyFloat::Add<f16, FloppyFloat::kRoundTiesToEven>(f16 a, f16 b);
 template f16 FloppyFloat::Add<f16, FloppyFloat::kRoundTowardPositive>(f16 a, f16 b);
 template f16 FloppyFloat::Add<f16, FloppyFloat::kRoundTowardNegative>(f16 a, f16 b);
 template f16 FloppyFloat::Add<f16, FloppyFloat::kRoundTowardZero>(f16 a, f16 b);
+template f16 FloppyFloat::Add<f16, FloppyFloat::kRoundTiesToAway>(f16 a, f16 b);
 
 template f32 FloppyFloat::Add<f32, FloppyFloat::kRoundTiesToEven>(f32 a, f32 b);
 template f32 FloppyFloat::Add<f32, FloppyFloat::kRoundTowardPositive>(f32 a, f32 b);
 template f32 FloppyFloat::Add<f32, FloppyFloat::kRoundTowardNegative>(f32 a, f32 b);
 template f32 FloppyFloat::Add<f32, FloppyFloat::kRoundTowardZero>(f32 a, f32 b);
+template f32 FloppyFloat::Add<f32, FloppyFloat::kRoundTiesToAway>(f32 a, f32 b);
 
 template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTiesToEven>(f64 a, f64 b);
 template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTowardPositive>(f64 a, f64 b);
 template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTowardNegative>(f64 a, f64 b);
 template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTowardZero>(f64 a, f64 b);
+template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTiesToAway>(f64 a, f64 b);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
 FT FloppyFloat::Sub(FT a, FT b) {
@@ -901,16 +948,4 @@ void FloppyFloat::SetupTox86() {
   invalid_fma = false;
   nan_propagation_scheme = kNanPropX86sse;
   conversion_limits = kLimitsx86;
-}
-
-constexpr f64 FloppyFloat::PropagateNan(f32 a) {
-  if (nan_propagation_scheme == kNanPropX86sse) {
-    u64 payload = (u64)GetPayload(a) << 29;
-    u64 result = (((u64)std::signbit(a)) << 63) | 0x7ff8000000000000ull | payload;
-    return std::bit_cast<f64>(result);
-  } else if (nan_propagation_scheme == kNanPropRiscv) {
-    return GetQnan<f64>();
-  } else {
-    throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
-  }
 }
