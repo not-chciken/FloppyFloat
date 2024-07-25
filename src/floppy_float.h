@@ -9,6 +9,11 @@
 
 #include "utils.h"
 
+static_assert(std::numeric_limits<f16>::is_iec559);
+static_assert(std::numeric_limits<f32>::is_iec559);
+static_assert(std::numeric_limits<f64>::is_iec559);
+static_assert(std::numeric_limits<f128>::is_iec559);
+
 class FloppyFloat {
  public:
   // See IEEE 754-2019: 4.3 Rounding-direction attributes
@@ -81,8 +86,20 @@ class FloppyFloat {
   u32 F32ToU32(f32 a);
   template <RoundingMode rm = kRoundTiesToEven>
   u64 F32ToU64(f32 a);
-  // f16 F32ToF16(f32 a); TODO
+  template <RoundingMode rm = kRoundTiesToEven>
+  f16 F32ToF16(f32 a);
   f64 F32ToF64(f32 a);
+
+  template <RoundingMode rm = kRoundTiesToEven>
+  i32 F64ToI32(f64 a);
+  template <RoundingMode rm = kRoundTiesToEven>
+  i64 F64ToI64(f64 a);
+  // template <RoundingMode rm = kRoundTiesToEven>
+  // u32 F64ToU32(f64 a); TODO
+  // template <RoundingMode rm = kRoundTiesToEven>
+  // u64 F64ToU64(f64 a); TODO
+  // f16 F64ToF16(f64 a); TODO
+  // f64 F64ToF64(f64 a); TODO
 
   void SetupToArm();
   void SetupToRiscv();
