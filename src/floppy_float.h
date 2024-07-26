@@ -94,8 +94,8 @@ class FloppyFloat {
   i32 F64ToI32(f64 a);
   template <RoundingMode rm = kRoundTiesToEven>
   i64 F64ToI64(f64 a);
-  // template <RoundingMode rm = kRoundTiesToEven>
-  // u32 F64ToU32(f64 a); TODO
+  template <RoundingMode rm = kRoundTiesToEven>
+  u32 F64ToU32(f64 a); //TODO
   // template <RoundingMode rm = kRoundTiesToEven>
   // u64 F64ToU64(f64 a); TODO
   // f16 F64ToF16(f64 a); TODO

@@ -1218,6 +1218,104 @@ template i64 FloppyFloat::F64ToI64<FloppyFloat::kRoundTowardNegative>(f64 a);
 template i64 FloppyFloat::F64ToI64<FloppyFloat::kRoundTowardZero>(f64 a);
 template i64 FloppyFloat::F64ToI64<FloppyFloat::kRoundTiesToAway>(f64 a);
 
+template<FloppyFloat::RoundingMode rm>
+constexpr f64 F64ToU32NegLimit() {
+  if constexpr (rm == FloppyFloat::kRoundTiesToEven) {
+    return -0.5f64;
+  }  else if constexpr (rm == FloppyFloat::kRoundTiesToAway) {
+    return -0.49999999999999994f64;
+  } else if constexpr (rm == FloppyFloat::kRoundTowardNegative) {
+    return -0.0f64;
+  } else if constexpr (rm == FloppyFloat::kRoundTowardPositive) {
+    return -0.9999999999999999f64;
+  } else if constexpr (rm == FloppyFloat::kRoundTowardZero) {
+    return -0.9999999999999999f64;
+  }
+}
+
+template<FloppyFloat::RoundingMode rm>
+constexpr f64 F64ToU32PosLimit() {
+  if constexpr (rm == FloppyFloat::kRoundTiesToEven) {
+    return 4294967295.4999995f64;
+  } else if constexpr (rm == FloppyFloat::kRoundTiesToAway) {
+    return 4294967295.4999995f64;
+  } else if constexpr (rm == FloppyFloat::kRoundTowardNegative) {
+    return 4294967295.9999995f64;
+  } else if constexpr (rm == FloppyFloat::kRoundTowardPositive) {
+    return 4294967295.f64;
+  } else if constexpr (rm == FloppyFloat::kRoundTowardZero) {
+    return 4294967295.9999995f64;
+  }
+}
+
+template <FloppyFloat::RoundingMode rm>
+u32 FloppyFloat::F64ToU32(f64 a) {
+  if (conversion_limits == kLimitsx86) {
+    if (IsNan(a) || (a >= 9223372036854775808.0f64) || (a < -9223372036854775808.0f64)) {
+      invalid = true;
+      return std::numeric_limits<u32>::min();
+    }
+  } else if (conversion_limits == kLimitsRiscv) {
+    if (IsNan(a)) {
+      invalid = true;
+      return std::numeric_limits<u32>::max();
+    }
+    if (a > 4294967295.f64) {
+      if (a > F64ToU32PosLimit<rm>())
+        invalid = true;
+      else
+        inexact = true;
+      return std::numeric_limits<u32>::max();
+    }
+    if (a < 0.f64) {
+      if (a < F64ToU32NegLimit<rm>())
+        invalid = true;
+      else
+        inexact = true;
+      return std::numeric_limits<u32>::min();
+    }
+  }
+
+  u32 ia;
+  ia = static_cast<u32>(a);  // C++ always truncates (i.e., rounds to zero).
+
+  f64 r = static_cast<f64>(ia) - a;
+  if (r != 0.f)
+    inexact = true;
+
+  if constexpr (rm == kRoundTowardNegative) {
+    if (r > 0)
+      ia -= 1;
+  } else if constexpr (rm == kRoundTowardPositive) {
+    if (r < 0)
+      ia += 1;
+  } else {
+    if (r) {
+      f64 ia_p05 = static_cast<f64>(ia) + 0.5f64;
+      if constexpr (rm == kRoundTiesToEven) {
+        if (ia_p05 <= a) {
+          if (ia_p05 == a) [[unlikely]] {
+            if (!(ia % 2))
+              ia -= 1;
+          }
+          ia += 1;
+        }
+      } else if constexpr (rm == kRoundTiesToAway) {
+        if (ia_p05 <= a)
+          ia += 1;
+      }
+    }
+  }
+
+  return ia;
+}
+
+template u32 FloppyFloat::F64ToU32<FloppyFloat::kRoundTiesToEven>(f64 a);
+template u32 FloppyFloat::F64ToU32<FloppyFloat::kRoundTowardPositive>(f64 a);
+template u32 FloppyFloat::F64ToU32<FloppyFloat::kRoundTowardNegative>(f64 a);
+template u32 FloppyFloat::F64ToU32<FloppyFloat::kRoundTowardZero>(f64 a);
+template u32 FloppyFloat::F64ToU32<FloppyFloat::kRoundTiesToAway>(f64 a);
+
 template <typename FT>
 u32 FloppyFloat::Class(FT a) {
   bool sign = std::signbit(a);
