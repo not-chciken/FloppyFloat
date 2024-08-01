@@ -9,6 +9,9 @@
 #include <cmath>
 #include <stdexcept>
 
+// 2Sum algorithm which determines the exact residual of an addition.
+// May not work in cases that cause intermediate overflows (e.g., 65504.f16 + -48.f16).
+// Prefer the Fast2Sum algorithm for these cases.
 template <typename FT>
 constexpr FT TwoSum(FT a, FT b, FT c) {
   FT ad = c - b;
@@ -19,6 +22,7 @@ constexpr FT TwoSum(FT a, FT b, FT c) {
   return r;
 }
 
+// 2Sum algorithm which determines the exact residual of an addition.
 template <typename FT>
 constexpr FT FastTwoSum(FT a, FT b, FT c) {
   FT x = std::fabs(a) > std::fabs(b) ? a : b;
@@ -248,6 +252,7 @@ constexpr FT ResidualLimit() {
   }
 }
 
+// TODO mathematical proof or change to *0.5 method.
 template <typename FT, FloppyFloat::RoundingMode rm>
 constexpr bool IsOverflow(FT a, FT b, FT c) {
   if (IsInf(c))
@@ -255,17 +260,17 @@ constexpr bool IsOverflow(FT a, FT b, FT c) {
   if constexpr (rm == FloppyFloat::kRoundTiesToEven) {
     return true;
   } else if constexpr (rm == FloppyFloat::kRoundTowardPositive) {
-    FT r = TwoSum<FT>(a, b, c);
-    return (r >= ResidualLimit<FT>()); // TODO adapt;
+    FT r = FastTwoSum<FT>(a, b, c);
+    return (r >= ResidualLimit<FT>());
   } else if constexpr (rm == FloppyFloat::kRoundTowardNegative) {
-    FT r = TwoSum<FT>(a, b, c);
-    return (r <= -ResidualLimit<FT>()); // TODO adapt;
+    FT r = FastTwoSum<FT>(a, b, c);
+    return (r <= -ResidualLimit<FT>());
   } else if constexpr (rm == FloppyFloat::kRoundTowardZero) {
-    FT r = TwoSum<FT>(a, b, c);
+    FT r = FastTwoSum<FT>(a, b, c);
     if (std::signbit(c)) {
-      return (r >= ResidualLimit<FT>()); // TODO adapt;
+      return (r >= ResidualLimit<FT>());
     } else {
-      return (r <= -ResidualLimit<FT>()); // TODO adapt;
+      return (r <= -ResidualLimit<FT>());
     }
   } else if constexpr (rm == FloppyFloat::kRoundTiesToAway) {
     return true;
@@ -308,12 +313,12 @@ FT FloppyFloat::Add(FT a, FT b) {
 
   if constexpr (rm == kRoundTiesToEven) {
     if (!inexact) [[unlikely]] {
-      FT r = TwoSum<FT>(a, b, c);
+      FT r = FastTwoSum<FT>(a, b, c);
       if (r != 0)
         inexact = true;
     }
   } else {
-    FT r = TwoSum<FT>(a, b, c);
+    FT r = FastTwoSum<FT>(a, b, c);
     if (r != 0) {
       inexact = true;
       if constexpr (rm == kRoundTiesToAway) {
@@ -323,10 +328,10 @@ FT FloppyFloat::Add(FT a, FT b) {
         if (-cc == r_scaled) [[unlikely]] {
           if (r < 0. && c > 0.) {
             c = NextUpNoNegZero(c);
-            overflow = IsPosInf(c) ? true : overflow;
+            overflow = IsInf(c) ? true : overflow;
           } else if (r > 0. && c < 0.) {
             c = NextDownNoPosZero(c);
-            overflow = IsNegInf(c) ? true : overflow;
+            overflow = IsInf(c) ? true : overflow;
           }
         }
       } else {
@@ -390,12 +395,12 @@ FT FloppyFloat::Sub(FT a, FT b) {
 
   if constexpr (rm == kRoundTiesToEven) {
     if (!inexact) [[unlikely]] {
-      FT r = TwoSum<FT>(a, -b, c);
+      FT r = FastTwoSum<FT>(a, -b, c);
       if (r != 0)
         inexact = true;
     }
   } else {
-    FT r = TwoSum(a, -b, c);
+    FT r = FastTwoSum(a, -b, c);
     if (r != 0) {
       inexact = true;
       if constexpr (rm == kRoundTiesToAway) {
@@ -405,10 +410,10 @@ FT FloppyFloat::Sub(FT a, FT b) {
         if (-cc == r_scaled) [[unlikely]] {
           if (r < 0. && c > 0.) {
             c = NextUpNoNegZero(c);
-            overflow = IsPosInf(c) ? true : overflow;
+            overflow = IsInf(c) ? true : overflow;
           } else if (r > 0. && c < 0.) {
             c = NextDownNoPosZero(c);
-            overflow = IsNegInf(c) ? true : overflow;
+            overflow = IsInf(c) ? true : overflow;
           }
         }
       } else {
