@@ -28,12 +28,15 @@ At the moment, the following functions and corresponding rounding modes are impl
 | Mul<f16,f32,f64>   | X   | X   | X   | X   | O   |
 | Div<f16,f32,f64>   | X   | X   | X   | X   | O   |
 | Sqrt<f16,f32,f64>  | X   | X   | X   | X   | O   |
-| Fma<f16,f32>       | X   | X   | X   | X   | O   |
+| Fma<f16,f32,f64>   | X   | X   | X   | X   | O   |
 | F32ToI32           | X   | X   | X   | X   | X   |
 | F32ToI64           | X   | X   | X   | X   | X   |
 | F32ToU32           | X   | X   | X   | X   | X   |
 | F32ToU64           | X   | X   | X   | X   | X   |
 | F32ToF64           | X   | X   | X   | X   | X   |
+| F32ToF16           | X   | X   | X   | X   | O   |
+| F64ToI32           | X   | X   | X   | X   | X   |
+| F64ToI64           | X   | X   | X   | X   | X   |
 
 Eq<f16,f32,f64>, Le<f16,f32,f64>, Lt<f16,f32,f64>, MinimumNumber<f16,f32,f64>, MaximumNumber<f16,f32,f64>
 
@@ -62,3 +65,8 @@ f32 result = ff.Mul<f32, FloppyFloat::kRoundTowardZero>(a, b);
 ## How does it work?
 Coding, algorithms, and a bit of math.
 For a detailed explanation see [this blog post](https://www.chciken.com/simulation/2023/11/12/fast-floating-point-simulation.html).
+
+## Issues
+- `Fma` and `Sqrt` for f16 inherits the incorrect rounding problem of glibc (calculates the result as f32 and then casts to f16).
+- Overflow exception for `Add`, `Sub`, `Mul`, `Div`, `Sqrt`, `Fma` may not trigger in some cases
+- Underflow exception for `Mul`, `Div`, `Sqrt`, `Fma` may not trigger in some cases
