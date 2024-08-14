@@ -37,8 +37,42 @@ At the moment, the following functions and corresponding rounding modes are impl
 | F32ToF16           | X   | X   | X   | X   | O   |
 | F64ToI32           | X   | X   | X   | X   | X   |
 | F64ToI64           | X   | X   | X   | X   | X   |
+| Eq<f16,f32,f64>    | X   | X   | X   | X   | X   |
+| Lt<f16,f32,f64>    | X   | X   | X   | X   | X   |
+| Le<f16,f32,f64>    | X   | X   | X   | X   | X   |
 
-Eq<f16,f32,f64>, Le<f16,f32,f64>, Lt<f16,f32,f64>, MinimumNumber<f16,f32,f64>, MaximumNumber<f16,f32,f64>
+| Function           | RISC-V    | x86 SSE     | ARM64  |
+|--------------------|-----------|-------------|--------|
+| Add<f16>           | FADD.H    | -           | FADD   |
+| Sub<f16>           | FSUB.H    | -           | FSUB   |
+| Mul<f16>           | FMUL.H    | -           | FMUL   |
+| Div<f16>           | FDIV.H    | -           | FDIV   |
+| Sqrt<f16>          | FSQRT.H   | -           | FSQRT  |
+| Fma<f16>           | FMADD.H   | -           | FMADD  |
+| Add<f32>           | FADD.S    | ADDSS       | FADD   |
+| Sub<f32>           | FSUB.S    | SUBSS       | FSUB   |
+| Mul<f32>           | FMUL.S    | MULSS       | FMUL   |
+| Div<f32>           | FDIV.S    | DIVSS       | FDIV   |
+| Sqrt<f32>          | FSQRT.S   | SQRTSS      | FSQRT  |
+| Fma<f32>           | FMADD.S   | VFMADDxxxSS | FMADD  |
+| F32ToI32           | FCVT.W.S  | CVTSS2SI    | FCVTxS |
+| F32ToI64           | FCVT.L.S  | CVTSS2SI    | FCVTxS |
+| F32ToU32           | FCVT.WU.S | (1)         | FCVTxU |
+| F32ToU64           | FCVT.LU.S | (1)         | FCVTxU |
+| F32ToF16           | FCVT.H.S  | -           | FCVT   |
+| F32ToF64           | FCVT.D.S  | CVTSS2SD    | FCVT   |
+| Eq<f32>            | FEQ.S     | (2)         | (3)    |
+| Lt<f32>            | FLT.S     | (2)         | (3)    |
+| Le<f32>            | FLE.S     | (2)         | (3)    |
+| MaximumNumber<f32> | FMAX.S    | MAXSS       | (4)    |
+| MinimumNumber<f32> | FMIN.S    | MINSS       | (4)    |
+| F64ToI32           | X         |             |        |
+| F64ToI64           | X         |             |        |
+
+(1): Compiled code fpr x86 SSE resorts to CVTSS2SI for F32ToUxx.
+(2): x86 SSE uses UCOMISS to achieve a the same functionality.
+(3): ARM64 uses FCMP and FCMPE.
+(4): ARM64 provides FMAXNM/FMINNM and FMAX/FMIN
 
 ## Build
 FloppyFloat follows a CMake build process:
