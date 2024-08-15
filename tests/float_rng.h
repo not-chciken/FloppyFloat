@@ -185,10 +185,12 @@ class FloatRng {
     values_.push_back(nl<FT>::quiet_NaN());
     values_.push_back(nl<FT>::infinity());
     values_.push_back((FT)0.);
-    values_.push_back(CreateQnanWithPayload<FT>(1u));
-    values_.push_back(CreateQnanWithPayload<FT>(1u));
-    values_.push_back(CreateQnanWithPayload<FT>(128u));
-    values_.push_back(CreateQnanWithPayload<FT>(37u));
+    values_.push_back(FfUtils::CreateQnanWithPayload<FT>(1u));
+    values_.push_back(FfUtils::CreateQnanWithPayload<FT>(1u));
+    values_.push_back(FfUtils::CreateQnanWithPayload<FT>(128u));
+    values_.push_back(FfUtils::CreateQnanWithPayload<FT>(37u));
+    values_.push_back((FT)0.5);
+    values_.push_back((FT)-0.5);
   }
 
   FT Gen() {
@@ -205,6 +207,6 @@ class FloatRng {
  private:
   size_t index_;
   std::mt19937 engine_;
-  std::uniform_int_distribution<typename FloatToUint<FT>::type> dist_;
+  std::uniform_int_distribution<typename FfUtils::FloatToUint<FT>::type> dist_;
   std::vector<FT> values_;
 };
