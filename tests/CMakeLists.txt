@@ -7,12 +7,15 @@ add_custom_target(tests)
 
 add_executable(test_utils test_utils.cpp)
 add_executable(test_core test_core.cpp)
+add_executable(test_full_proof test_full_proof.cpp)
+add_executable(test_softfloat_arm64_default_nan test_softfloat_arm64_default_nan.cpp)
 add_executable(test_softfloat_riscv test_softfloat_riscv.cpp)
+add_executable(test_softfloat_x86 test_softfloat_x86.cpp)
 add_executable(test_x86 test_x86.cpp)
 
 set(TEST_INCLUDE_PATHS ${CMAKE_SOURCE_DIR}/src)
 set(TEST_LIBS ${CMAKE_BINARY_DIR}/libFloppyFloatTest.a -lgtest -lgcov)
-set(TEST_COMPILE_OPTS --coverage -g -O0)
+set(TEST_COMPILE_OPTS --coverage -g -O3)
 
 macro(create_test_case test_name additional_libs)
   add_dependencies(tests ${test_name})
@@ -27,7 +30,10 @@ endmacro()
 
 create_test_case(test_utils "")
 create_test_case(test_core "")
+create_test_case(test_softfloat_arm64_default_nan "-lsoftfloat-arm-default-nan")
 create_test_case(test_softfloat_riscv "-lsoftfloat-riscv")
+create_test_case(test_softfloat_x86 "-lsoftfloat-x64")
+create_test_case(test_full_proof "-lsoftfloat-riscv")
 create_test_case(test_x86 "")
 
 # Comparions against Berkely SoftFloat
