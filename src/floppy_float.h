@@ -9,12 +9,12 @@
 
 #include "utils.h"
 
-static_assert(std::numeric_limits<f16>::is_iec559);
-static_assert(std::numeric_limits<f32>::is_iec559);
-static_assert(std::numeric_limits<f64>::is_iec559);
-static_assert(std::numeric_limits<f128>::is_iec559);
-
 class FloppyFloat {
+  static_assert(std::numeric_limits<FfUtils::f16>::is_iec559);
+  static_assert(std::numeric_limits<FfUtils::f32>::is_iec559);
+  static_assert(std::numeric_limits<FfUtils::f64>::is_iec559);
+  static_assert(std::numeric_limits<FfUtils::f128>::is_iec559);
+
  public:
   // See IEEE 754-2019: 4.3 Rounding-direction attributes
   enum RoundingMode {
@@ -32,17 +32,23 @@ class FloppyFloat {
   bool underflow;
   bool inexact;
 
-  enum NanPropagationSchemes { kNanPropRiscv, kNanPropX86sse } nan_propagation_scheme;
-  enum ConversionLimits { kLimitsRiscv, kLimitsx86, kLimitsArm } conversion_limits;
+  // kNanPropArm64DefaultNan => FPCR.DN = 1
+  // kNanPropArm64 => FPCR.DN = 0
+  enum NanPropagationSchemes {
+    kNanPropRiscv,
+    kNanPropX86sse,
+    kNanPropArm64DefaultNan,
+    kNanPropArm64
+  } nan_propagation_scheme;
   bool tininess_before_rounding = false;
-  bool invalid_fma = true; // If true, FMA raises invalid for "∞ × 0 + qNaN". See IEE 754 ("7.2 Invalid operation").
+  bool invalid_fma = true;  // If true, FMA raises invalid for "∞ × 0 + qNaN". See IEE 754 ("7.2 Invalid operation").
 
   FloppyFloat();
 
   void ClearFlags();
 
   template <typename FT>
-  void SetQnan(typename FloatToUint<FT>::type val);
+  void SetQnan(typename FfUtils::FloatToUint<FT>::type val);
   template <typename FT>
   constexpr FT GetQnan();
 
@@ -76,32 +82,56 @@ class FloppyFloat {
   FT MinimumNumber(FT a, FT b);
 
   template <typename FT>
-  u32 Class(FT a);
+  FfUtils::u32 Class(FT a);
 
   template <RoundingMode rm = kRoundTiesToEven>
-  i32 F32ToI32(f32 a);
+  FfUtils::i32 F32ToI32(FfUtils::f32 a);
   template <RoundingMode rm = kRoundTiesToEven>
-  i64 F32ToI64(f32 a);
+  FfUtils::i64 F32ToI64(FfUtils::f32 a);
   template <RoundingMode rm = kRoundTiesToEven>
-  u32 F32ToU32(f32 a);
+  FfUtils::u32 F32ToU32(FfUtils::f32 a);
   template <RoundingMode rm = kRoundTiesToEven>
-  u64 F32ToU64(f32 a);
+  FfUtils::u64 F32ToU64(FfUtils::f32 a);
   template <RoundingMode rm = kRoundTiesToEven>
-  f16 F32ToF16(f32 a);
-  f64 F32ToF64(f32 a);
+  FfUtils::f16 F32ToF16(FfUtils::f32 a);
+  FfUtils::f64 F32ToF64(FfUtils::f32 a);
 
   template <RoundingMode rm = kRoundTiesToEven>
-  i32 F64ToI32(f64 a);
+  FfUtils::i32 F64ToI32(FfUtils::f64 a);
   template <RoundingMode rm = kRoundTiesToEven>
-  i64 F64ToI64(f64 a);
+  FfUtils::i64 F64ToI64(FfUtils::f64 a);
   template <RoundingMode rm = kRoundTiesToEven>
-  u32 F64ToU32(f64 a);
+  FfUtils::u32 F64ToU32(FfUtils::f64 a);
   template <RoundingMode rm = kRoundTiesToEven>
-  u64 F64ToU64(f64 a);
+  FfUtils::u64 F64ToU64(FfUtils::f64 a);
   // f16 F64ToF16(f64 a); TODO
   // f64 F64ToF64(f64 a); TODO
 
-  void SetupToArm();
+  // template <RoundingMode rm = kRoundTiesToEven>
+  // FfUtils::f16 I32ToF16(FfUtils::i32 a); // TODO: implement
+  template <RoundingMode rm = kRoundTiesToEven>
+  FfUtils::f32 I32ToF32(FfUtils::i32 a); // TODO: implement
+  FfUtils::f64 I32ToF64(FfUtils::i32 a); // TODO: implement
+
+  // template <RoundingMode rm = kRoundTiesToEven>
+  // FfUtils::f16 U32ToF16(FfUtils::u32 a); // TODO: implement
+  // template <RoundingMode rm = kRoundTiesToEven>
+  // FfUtils::f32 U32ToF32(FfUtils::u32 a); // TODO: implement
+  // FfUtils::f64 U32ToF64(FfUtils::u32 a); // TODO: implement
+
+  // template <RoundingMode rm = kRoundTiesToEven>
+  // FfUtils::f16 I64ToF16(FfUtils::i64 a); // TODO: implement
+  // template <RoundingMode rm = kRoundTiesToEven>
+  // FfUtils::f32 I64ToF32(FfUtils::i64 a); // TODO: implement
+  // FfUtils::f64 I64ToF64(FfUtils::i64 a); // TODO: implement
+
+  // template <RoundingMode rm = kRoundTiesToEven>
+  // FfUtils::f16 U64ToF16(FfUtils::u64 a); // TODO: implement
+  // template <RoundingMode rm = kRoundTiesToEven>
+  // FfUtils::f32 U64ToF32(FfUtils::u64 a); // TODO: implement
+  // FfUtils::f64 U64ToF64(FfUtils::u64 a); // TODO: implement
+
+  void SetupToArm64();
   void SetupToRiscv();
   void SetupTox86();
 
@@ -110,9 +140,22 @@ class FloppyFloat {
   constexpr FT RoundResult(TFT residual, FT result);
   template <typename FT>
   constexpr FT PropagateNan(FT a, FT b);
-  constexpr f64 PropagateNan(f32 a);
+  constexpr FfUtils::f64 PropagateNan(FfUtils::f32 a);
 
-  f16 qnan16_;
-  f32 qnan32_;
-  f64 qnan64_;
+  FfUtils::f16 qnan16_;
+  FfUtils::f32 qnan32_;
+  FfUtils::f64 qnan64_;
+
+  FfUtils::i32 nan_limit_i32_;
+  FfUtils::i32 max_limit_i32_;
+  FfUtils::i32 min_limit_i32_;
+  FfUtils::u32 nan_limit_u32_;
+  FfUtils::u32 max_limit_u32_;
+  FfUtils::u32 min_limit_u32_;
+  FfUtils::i64 nan_limit_i64_;
+  FfUtils::i64 max_limit_i64_;
+  FfUtils::i64 min_limit_i64_;
+  FfUtils::u64 nan_limit_u64_;
+  FfUtils::u64 max_limit_u64_;
+  FfUtils::u64 min_limit_u64_;
 };

@@ -9,6 +9,8 @@
 #include <cmath>
 #include <stdexcept>
 
+using namespace FfUtils;
+
 // 2Sum algorithm which determines the exact residual of an addition.
 // May not work in cases that cause intermediate overflows (e.g., 65504.f16 + -48.f16).
 // Prefer the Fast2Sum algorithm for these cases.
@@ -209,6 +211,8 @@ constexpr FT FloppyFloat::PropagateNan(FT a, FT b) {
     return IsNan(a) ? SetQuietBit(a) : SetQuietBit(b);
   } else if (nan_propagation_scheme == kNanPropRiscv) {
     return GetQnan<FT>();
+  } else if (nan_propagation_scheme == kNanPropArm64DefaultNan) {
+    return GetQnan<FT>();
   } else {
     throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
   }
@@ -220,6 +224,8 @@ constexpr f64 FloppyFloat::PropagateNan(f32 a) {
     u64 result = (((u64)std::signbit(a)) << 63) | 0x7ff8000000000000ull | payload;
     return std::bit_cast<f64>(result);
   } else if (nan_propagation_scheme == kNanPropRiscv) {
+    return GetQnan<f64>();
+  } else if (nan_propagation_scheme == kNanPropArm64DefaultNan) {
     return GetQnan<f64>();
   } else {
     throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
@@ -291,16 +297,15 @@ FT FloppyFloat::Add(FT a, FT b) {
         inexact = true;
       }
       return c;
-    } else {  // NaN case.
-      if (IsInf(a) && IsInf(b)) {
-        invalid = true;
-        return GetQnan<FT>();
-      }
-      if (IsSnan(a) || IsSnan(b))
-        invalid = true;
-      if (IsNan(a) || IsNan(b))
-        return PropagateNan<FT>(a, b);
     }
+    if (IsInf(a) && IsInf(b)) {
+      invalid = true;
+      return GetQnan<FT>();
+    }
+    if (IsSnan(a) || IsSnan(b))
+      invalid = true;
+    if (IsNan(a) || IsNan(b))
+      return PropagateNan<FT>(a, b);
   }
 
   // See: IEEE 754-2019: 6.3 The sign bit
@@ -373,16 +378,15 @@ FT FloppyFloat::Sub(FT a, FT b) {
         inexact = true;
       }
       return c;
-    } else {  // NaN case.
-      if (IsInf(a) && IsInf(b)) {
-        invalid = true;
-        return GetQnan<FT>();
-      }
-      if (IsSnan(a) || IsSnan(b))
-        invalid = true;
-      if (IsNan(a) || IsNan(b))
-        return PropagateNan<FT>(a, b);
     }
+    if (IsInf(a) && IsInf(b)) {
+      invalid = true;
+      return GetQnan<FT>();
+    }
+    if (IsSnan(a) || IsSnan(b))
+      invalid = true;
+    if (IsNan(a) || IsNan(b))
+      return PropagateNan<FT>(a, b);
   }
 
   // See: IEEE 754-2019: 6.3 The sign bit
@@ -862,33 +866,24 @@ constexpr IT RoundIntegerResult(FT residual, FT source, IT result) {
 
 template <FloppyFloat::RoundingMode rm>
 i32 FloppyFloat::F32ToI32(f32 a) {
-  if (conversion_limits == kLimitsx86) {
-    if (IsNan(a) || (a >= 2147483648.f) || (a < -2147483648.f)) {
-      invalid = true;
-      return std::numeric_limits<i32>::min();
-    }
-  } else if (conversion_limits == kLimitsRiscv) {
-    if (IsNan(a)) {
-      invalid = true;
-      return std::numeric_limits<i32>::max();
-    }
-    if (a >= 2147483648.f) {
-      invalid = true;
-      return std::numeric_limits<i32>::max();
-    }
-    if (a < -2147483648.f) {
-      invalid = true;
-      return std::numeric_limits<i32>::min();
-    }
+  if (IsNan(a)) {
+    invalid = true;
+    return nan_limit_i32_;
+  } else if (a >= 2147483648.f) [[unlikely]] {
+    invalid = true;
+    return max_limit_i32_;
+  } else if (a < -2147483648.f) [[unlikely]] {
+    invalid = true;
+    return min_limit_i32_;
   }
 
   i32 ia;
-  if constexpr (rm == kRoundTowardZero) {
-    ia = static_cast<i32>(a);  // C++ always truncates (i.e., rounds to zero).
+  if constexpr (rm == kRoundTiesToEven) {
+    ia = std::lrint(a);
   } else if constexpr (rm == kRoundTiesToAway) {
     ia = std::lround(a);
   } else {
-    ia = std::lrint(a);
+    ia = static_cast<i32>(a);  // C++ always truncates (i.e., rounds to zero).
   }
 
   f32 r = static_cast<f32>(ia) - a;
@@ -914,33 +909,24 @@ template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTiesToAway>(f32 a);
 
 template <FloppyFloat::RoundingMode rm>
 i64 FloppyFloat::F32ToI64(f32 a) {
-  if (conversion_limits == kLimitsx86) {
-    if (IsNan(a) || (a >= 9223372036854775808.0f32) || (a < -9223372036854775808.0f32)) {
-      invalid = true;
-      return std::numeric_limits<i64>::min();
-    }
-  } else if (conversion_limits == kLimitsRiscv) {
-    if (IsNan(a)) {
-      invalid = true;
-      return std::numeric_limits<i64>::max();
-    }
-    if (a >= 9223372036854775808.0f32) {
-      invalid = true;
-      return std::numeric_limits<i64>::max();
-    }
-    if (a < -9223372036854775808.0f32) {
-      invalid = true;
-      return std::numeric_limits<i64>::min();
-    }
+  if (IsNan(a)) [[unlikely]] {
+    invalid = true;
+    return nan_limit_i64_;
+  } else if (a >= 9223372036854775808.0f32) [[unlikely]] {
+    invalid = true;
+    return max_limit_i64_;
+  } else if (a < -9223372036854775808.0f32) [[unlikely]] {
+    invalid = true;
+    return min_limit_i64_;
   }
 
   i64 ia;
-  if constexpr (rm == kRoundTowardZero) {
-    ia = static_cast<i64>(a);  // C++ always truncates (i.e., rounds to zero).
+  if constexpr (rm == kRoundTiesToEven) {
+    ia = std::lrint(a);
   } else if constexpr (rm == kRoundTiesToAway) {
     ia = std::lround(a);
   } else {
-    ia = std::lrint(a);
+    ia = static_cast<i64>(a);  // C++ always truncates (i.e., rounds to zero).
   }
 
   f32 r = static_cast<f32>(ia) - a;
@@ -981,36 +967,28 @@ bool ResultOutOfURange(FT a) {
 
 template <FloppyFloat::RoundingMode rm>
 u32 FloppyFloat::F32ToU32(f32 a) {
-  if (conversion_limits == kLimitsx86) {
-    if (IsNan(a) || (a >= 4294967296.f) || (a < -1.f)) [[unlikely]] {
+  if (IsNan(a)) [[unlikely]] {
+    invalid = true;
+    return nan_limit_u32_;
+  } else if (a >= 4294967296.f) [[unlikely]] {
+    invalid = true;
+    return max_limit_u32_;
+  } else if (a < 0.f) [[unlikely]] {
+    if (ResultOutOfURange<f32, rm>(a)) {
       invalid = true;
-      return std::numeric_limits<i32>::min();
+      return min_limit_u32_;
     }
-  } else if (conversion_limits == kLimitsRiscv) {
-    if (IsNan(a)) [[unlikely]] {
-      invalid = true;
-      return std::numeric_limits<u32>::max();
-    }
-    if (a >= 4294967296.f) [[unlikely]] {
-      invalid = true;
-      return std::numeric_limits<u32>::max();
-    }
-    if (a < 0.f) [[unlikely]] {
-      if (ResultOutOfURange<f32, rm>(a))
-        invalid = true;
-      else
-        inexact = true;
-      return std::numeric_limits<u32>::min();
-    }
+    inexact = true;
+    return std::numeric_limits<u32>::min();
   }
 
   u32 ia;
-  if constexpr (rm == kRoundTowardZero) {
-    ia = static_cast<u32>(a);  // C++ always truncates (i.e., rounds to zero).
+  if constexpr (rm == kRoundTiesToEven) {
+    ia = static_cast<u32>(std::llrint(a));
   } else if constexpr (rm == kRoundTiesToAway) {
     ia = static_cast<u32>(std::llround(a));
   } else {
-    ia = static_cast<u32>(std::llrint(a));
+    ia = static_cast<u32>(a);  // C++ always truncates (i.e., rounds to zero).
   }
 
   f32 r = static_cast<f32>(ia) - a;
@@ -1036,27 +1014,19 @@ template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTiesToAway>(f32 a);
 
 template <FloppyFloat::RoundingMode rm>
 u64 FloppyFloat::F32ToU64(f32 a) {
-  if (conversion_limits == kLimitsx86) {
-    if (IsNan(a) || (a >= 18446744073709551616.0f64) || (a < -1.f)) [[unlikely]] {
+  if (IsNan(a)) [[unlikely]] {
+    invalid = true;
+    return nan_limit_u64_;
+  } else if (a >= 18446744073709551616.0f64) [[unlikely]] {
+    invalid = true;
+    return max_limit_u64_;
+  } else if (a < 0.f) [[unlikely]] {
+    if (ResultOutOfURange<f32, rm>(a)) {
       invalid = true;
-      return std::numeric_limits<i64>::min();
+      return min_limit_u64_;
     }
-  } else if (conversion_limits == kLimitsRiscv) {
-    if (IsNan(a)) [[unlikely]] {
-      invalid = true;
-      return std::numeric_limits<u64>::max();
-    }
-    if (a >= 18446744073709551616.0f64) [[unlikely]] {
-      invalid = true;
-      return std::numeric_limits<u64>::max();
-    }
-    if (a < 0.f) [[unlikely]] {
-      if (ResultOutOfURange<f32, rm>(a))
-        invalid = true;
-      else
-        inexact = true;
-      return std::numeric_limits<u64>::min();
-    }
+    inexact = true;
+    return std::numeric_limits<u64>::min();
   }
 
   u64 ia = static_cast<u64>(a);  // C++ always truncates (i.e., rounds to zero).
@@ -1169,24 +1139,15 @@ constexpr f64 F64ToI32PosLimit() {
 
 template <FloppyFloat::RoundingMode rm>
 i32 FloppyFloat::F64ToI32(f64 a) {
-  if (conversion_limits == kLimitsx86) {
-    if (IsNan(a) || (a > F64ToI32PosLimit<rm>()) || (a < F64ToI32NegLimit<rm>())) {
-      invalid = true;
-      return std::numeric_limits<i32>::min();
-    }
-  } else if (conversion_limits == kLimitsRiscv) {
-    if (IsNan(a)) {
-      invalid = true;
-      return std::numeric_limits<i32>::max();
-    }
-    if (a > F64ToI32PosLimit<rm>()) {
-      invalid = true;
-      return std::numeric_limits<i32>::max();
-    }
-    if (a < F64ToI32NegLimit<rm>()) {
-      invalid = true;
-      return std::numeric_limits<i32>::min();
-    }
+  if (IsNan(a)) [[unlikely]] {
+    invalid = true;
+    return nan_limit_i32_;
+  } else if (a > F64ToI32PosLimit<rm>()) [[unlikely]] {
+    invalid = true;
+    return max_limit_i32_;
+  } else if (a < F64ToI32NegLimit<rm>()) [[unlikely]] {
+    invalid = true;
+    return min_limit_i32_;
   }
 
   i32 ia;
@@ -1221,24 +1182,15 @@ template i32 FloppyFloat::F64ToI32<FloppyFloat::kRoundTiesToAway>(f64 a);
 
 template <FloppyFloat::RoundingMode rm>
 i64 FloppyFloat::F64ToI64(f64 a) {
-  if (conversion_limits == kLimitsx86) {
-    if (IsNan(a) || (a >= 9223372036854775808.0f64) || (a < -9223372036854775808.0f64)) {
-      invalid = true;
-      return std::numeric_limits<i64>::min();
-    }
-  } else if (conversion_limits == kLimitsRiscv) {
-    if (IsNan(a)) {
-      invalid = true;
-      return std::numeric_limits<i64>::max();
-    }
-    if (a >= 9223372036854775808.0f64) {
-      invalid = true;
-      return std::numeric_limits<i64>::max();
-    }
-    if (a < -9223372036854775808.0f64) {
-      invalid = true;
-      return std::numeric_limits<i64>::min();
-    }
+  if (IsNan(a)) [[unlikely]] {
+    invalid = true;
+    return nan_limit_i64_;
+  } else if (a >= 9223372036854775808.0f64) [[unlikely]] {
+    invalid = true;
+    return max_limit_i64_;
+  } else if (a < -9223372036854775808.0f64) [[unlikely]] {
+    invalid = true;
+    return min_limit_i64_;
   }
 
   i64 ia;
@@ -1303,34 +1255,26 @@ constexpr f64 F64ToU32PosLimit() {
 
 template <FloppyFloat::RoundingMode rm>
 u32 FloppyFloat::F64ToU32(f64 a) {
-  if (conversion_limits == kLimitsx86) {
-    if (IsNan(a) || (a >= 9223372036854775808.0f64) || (a < -9223372036854775808.0f64)) {
+  if (IsNan(a)) [[unlikely]] {
+    invalid = true;
+    return nan_limit_u32_;
+  } else if (a > 4294967295.f64) [[unlikely]] {
+    if (a > F64ToU32PosLimit<rm>()) {
       invalid = true;
-      return std::numeric_limits<u32>::min();
+      return max_limit_u32_;
     }
-  } else if (conversion_limits == kLimitsRiscv) {
-    if (IsNan(a)) {
+    inexact = true;
+    return std::numeric_limits<u32>::max();
+  } else if (a < 0.f64) [[unlikely]] {
+    if (a < F64ToU32NegLimit<rm>()) {
       invalid = true;
-      return std::numeric_limits<u32>::max();
+      return min_limit_u32_;
     }
-    if (a > 4294967295.f64) {
-      if (a > F64ToU32PosLimit<rm>())
-        invalid = true;
-      else
-        inexact = true;
-      return std::numeric_limits<u32>::max();
-    }
-    if (a < 0.f64) {
-      if (a < F64ToU32NegLimit<rm>())
-        invalid = true;
-      else
-        inexact = true;
-      return std::numeric_limits<u32>::min();
-    }
+    inexact = true;
+    return std::numeric_limits<u32>::min();
   }
 
-  u32 ia;
-  ia = static_cast<u32>(a);  // C++ always truncates (i.e., rounds to zero).
+  u32 ia = static_cast<u32>(a);  // C++ always truncates (i.e., rounds to zero).
 
   f64 residual = static_cast<f64>(ia) - a;
   if (residual != 0.f)
@@ -1362,27 +1306,19 @@ constexpr f64 F64ToU64PosLimit() {
 
 template <FloppyFloat::RoundingMode rm>
 u64 FloppyFloat::F64ToU64(f64 a) {
-  if (conversion_limits == kLimitsx86) {
-    if (IsNan(a) || (a >= 9223372036854775808.0f64) || (a < -9223372036854775808.0f64)) {
+  if (IsNan(a)) [[unlikely]] {
+    invalid = true;
+    return nan_limit_u64_;
+  } else if (a > 18446744073709551616.f64) [[unlikely]] {
+    invalid = true;
+    return max_limit_u64_;
+  } else if (a < 0.f64) [[unlikely]] {
+    if (a < F64ToU32NegLimit<rm>()) {
       invalid = true;
-      return std::numeric_limits<u64>::min();
+      return min_limit_u64_;
     }
-  } else if (conversion_limits == kLimitsRiscv) {
-    if (IsNan(a)) {
-      invalid = true;
-      return std::numeric_limits<u64>::max();
-    }
-    if (a > 18446744073709551616.f64) {
-      invalid = true;
-      return std::numeric_limits<u64>::max();
-    }
-    if (a < 0.f64) {
-      if (a < F64ToU32NegLimit<rm>())
-        invalid = true;
-      else
-        inexact = true;
-      return std::numeric_limits<u64>::min();
-    }
+    inexact = true;
+    return std::numeric_limits<u64>::min();
   }
 
   u64 ia;
@@ -1400,6 +1336,10 @@ template u64 FloppyFloat::F64ToU64<FloppyFloat::kRoundTowardPositive>(f64 a);
 template u64 FloppyFloat::F64ToU64<FloppyFloat::kRoundTowardNegative>(f64 a);
 template u64 FloppyFloat::F64ToU64<FloppyFloat::kRoundTowardZero>(f64 a);
 template u64 FloppyFloat::F64ToU64<FloppyFloat::kRoundTiesToAway>(f64 a);
+
+f64 FloppyFloat::I32ToF64(i32 a) {
+  return static_cast<f64>(a);
+}
 
 template <typename FT>
 u32 FloppyFloat::Class(FT a) {
@@ -1422,13 +1362,28 @@ u32 FloppyFloat::Class(FT a) {
       (IsNan(a) && !IsSnan(a))       << 9;
 }
 
-void FloppyFloat::SetupToArm() {
+void FloppyFloat::SetupToArm64() {
   SetQnan<f16>(0x7e00u);
   SetQnan<f32>(0x7fc00000u);
   SetQnan<f64>(0x7ff8000000000000ull);
   tininess_before_rounding = true;
-  nan_propagation_scheme = kNanPropRiscv;  // Shares the same NaN propagation as ARM.
-  conversion_limits = kLimitsArm;
+  nan_propagation_scheme = kNanPropArm64DefaultNan;  // Shares the same NaN propagation as ARM.
+
+  nan_limit_i32_ = 0;
+  max_limit_i32_ = std::numeric_limits<i32>::max();
+  min_limit_i32_ = std::numeric_limits<i32>::min();
+
+  nan_limit_u32_ = 0;
+  max_limit_u32_ = std::numeric_limits<u32>::max();
+  min_limit_u32_ = std::numeric_limits<u32>::min();
+
+  nan_limit_i64_ = 0;
+  max_limit_i64_ = std::numeric_limits<i64>::max();
+  min_limit_i64_ = std::numeric_limits<i64>::min();
+
+  nan_limit_u64_ = 0;
+  max_limit_u64_ = std::numeric_limits<u64>::max();
+  min_limit_u64_ = std::numeric_limits<u64>::min();
 }
 
 void FloppyFloat::SetupToRiscv() {
@@ -1438,7 +1393,22 @@ void FloppyFloat::SetupToRiscv() {
   tininess_before_rounding = false;
   invalid_fma = true;
   nan_propagation_scheme = kNanPropRiscv;
-  conversion_limits = kLimitsRiscv;
+
+  nan_limit_i32_ = std::numeric_limits<i32>::max();
+  max_limit_i32_ = std::numeric_limits<i32>::max();
+  min_limit_i32_ = std::numeric_limits<i32>::min();
+
+  nan_limit_u32_ = std::numeric_limits<u32>::max();
+  max_limit_u32_ = std::numeric_limits<u32>::max();
+  min_limit_u32_ = std::numeric_limits<u32>::min();
+
+  nan_limit_i64_ = std::numeric_limits<i64>::max();
+  max_limit_i64_ = std::numeric_limits<i64>::max();
+  min_limit_i64_ = std::numeric_limits<i64>::min();
+
+  nan_limit_u64_ = std::numeric_limits<u64>::max();
+  max_limit_u64_ = std::numeric_limits<u64>::max();
+  min_limit_u64_ = std::numeric_limits<u64>::min();
 }
 
 void FloppyFloat::SetupTox86() {
@@ -1448,5 +1418,20 @@ void FloppyFloat::SetupTox86() {
   tininess_before_rounding = false;
   invalid_fma = false;
   nan_propagation_scheme = kNanPropX86sse;
-  conversion_limits = kLimitsx86;
+
+  nan_limit_i32_ = std::numeric_limits<i32>::min();
+  max_limit_i32_ = std::numeric_limits<i32>::min();
+  min_limit_i32_ = std::numeric_limits<i32>::min();
+
+  nan_limit_u32_ = std::numeric_limits<u32>::max();
+  max_limit_u32_ = std::numeric_limits<u32>::max();
+  min_limit_u32_ = std::numeric_limits<u32>::max();
+
+  nan_limit_i64_ = std::numeric_limits<i64>::min();
+  max_limit_i64_ = std::numeric_limits<i64>::min();
+  min_limit_i64_ = std::numeric_limits<i64>::min();
+
+  nan_limit_u64_ = std::numeric_limits<u64>::max();
+  max_limit_u64_ = std::numeric_limits<u64>::max();
+  min_limit_u64_ = std::numeric_limits<u64>::max();
 }

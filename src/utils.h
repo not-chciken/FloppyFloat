@@ -7,6 +7,8 @@
 #include <stdfloat>
 #include <type_traits>
 
+namespace FfUtils {
+
 using f16 = std::float16_t;
 using f32 = std::float32_t;
 using f64 = std::float64_t;
@@ -238,3 +240,5 @@ constexpr FT NextUpNoNegZero(FT a) {
   au += a >= 0. ? 1 : -1;  // Nextup of result cannot be -0.
   return std::bit_cast<FT>(au);
 }
+
+};
