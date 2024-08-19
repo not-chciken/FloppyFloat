@@ -128,6 +128,20 @@ struct QuietBit<f64> {
   static constexpr u64 u = 0x0008000000000000ull;
 };
 
+template <typename FT>
+constexpr int Bias() {
+  static_assert(std::is_floating_point<FT>::value);
+  if constexpr (std::is_same_v<FT, f16>) {
+    return 15;
+  } else if constexpr (std::is_same_v<FT, f32>) {
+    return 127;
+  } else if constexpr (std::is_same_v<FT, f64>) {
+    return 1023;
+  } else {
+    static_assert("Type needs to be f16, f32, or f64");
+  }
+}
+
 template <typename T>
 constexpr int NumBits() {
   if constexpr (std::is_same_v<T, f16> || std::is_same_v<T, u16>) {
@@ -136,8 +150,10 @@ constexpr int NumBits() {
     return 32;
   } else if constexpr (std::is_same_v<T, f64> || std::is_same_v<T, u64>) {
     return 64;
+  }  else if constexpr (std::is_same_v<T, f128> || std::is_same_v<T, u128>) {
+    return 128;
   } else {
-    static_assert("Type needs to be f16, f32, or f64");
+    static_assert("Unsupported data type");
   }
 }
 

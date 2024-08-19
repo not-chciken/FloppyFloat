@@ -22,6 +22,10 @@ class SoftFloat : public Vfpu {
   FT Mul(FT a, FT b);
   template <typename FT>
   FT Div(FT a, FT b);
+  template <typename FT>
+  FT Sqrt(FT a);
+  template <typename FT>
+  FT Fma(FT a, FT b, FT c);
 
   protected:
   template <typename FT, typename UT>
@@ -32,4 +36,6 @@ class SoftFloat : public Vfpu {
 
   template <typename FT, typename UT>
   constexpr FT Normalize(FfUtils::u32 a_sign, FfUtils::i32 a_exp, UT a_mant);
+  template <typename FT, typename UT>
+  constexpr FT Normalize(FfUtils::u32 a_sign, FfUtils::i32 a_exp, UT a_mant0, UT a_mant1);
 };

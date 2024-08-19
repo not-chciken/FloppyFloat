@@ -20,8 +20,26 @@ constexpr FT SoftFloat::Normalize(u32 a_sign, i32 a_exp, UT a_mant) {
   return RoundPack<FT>(a_sign, a_exp - shift, (UT)(a_mant << shift));
 }
 
+template <typename FT, typename UT>
+constexpr FT SoftFloat::Normalize(u32 a_sign, i32 a_exp, UT a_mant1, UT a_mant0) {
+  int l = a_mant1 ? std::countl_zero(a_mant1) : NumBits<FT>() + std::countl_zero(a_mant0);
+  int shift = l - (NumBits<FT>() - 1 - NumImantBits<FT>());
+  if (shift == 0) {
+    a_mant1 |= (a_mant0 != 0);
+  } else if (shift < (i32)NumBits<FT>()) {
+    a_mant1 = (a_mant1 << shift) | (a_mant0 >> (NumBits<FT>() - shift));
+    a_mant0 <<= shift;
+    a_mant1 |= (a_mant0 != 0);
+  } else {
+    a_mant1 = a_mant0 << (shift - NumBits<FT>());
+  }
+
+  return RoundPack<FT>(a_sign, a_exp - shift, a_mant1);
+}
+
 template <typename UT>
 constexpr UT RshiftRnd(UT a, int d) {
+  static_assert(std::is_integral_v<UT>);
   if (d == 0)
     return a;
   if (d >= NumBits<UT>())
@@ -33,6 +51,7 @@ constexpr UT RshiftRnd(UT a, int d) {
 
 template <typename UT>
 constexpr std::pair<UT, UT> Umul(UT a, UT b) {
+  static_assert(std::is_integral_v<UT>);
   auto ta = static_cast<typename TwiceWidthType<UT>::type>(a);
   auto tb = static_cast<typename TwiceWidthType<UT>::type>(b);
   auto r = ta * tb;
@@ -41,9 +60,34 @@ constexpr std::pair<UT, UT> Umul(UT a, UT b) {
 
 template <typename UT>
 constexpr std::pair<UT, UT> DivRem(UT ah, UT al, UT b) {
-    using UTT = typename TwiceWidthType<UT>::type;
-    UTT a = static_cast<UTT>(ah) << NumBits<UT>() | al;
-    return std::make_pair(a / b, a % b);
+  static_assert(std::is_integral_v<UT>);
+  using UTT = typename TwiceWidthType<UT>::type;
+  UTT a = static_cast<UTT>(ah) << NumBits<UT>() | al;
+  return std::make_pair(a / b, a % b);
+}
+
+template <typename UT>
+constexpr bool Usqrt(UT& root, UT ah, UT al) {
+  static_assert(std::is_integral_v<UT>);
+  using UTT = typename TwiceWidthType<UT>::type;
+  if (ah == 0 && al == 0) {
+    root = 0;
+    return false;
+  }
+
+  int l = ah ? NumBits<UTT>() - std::countl_zero(static_cast<UT>(ah - 1))
+             : NumBits<UT>() - std::countl_zero(static_cast<UT>(al - 1));
+  UTT u = 1ull << (l + 1) / 2;
+  UTT a = static_cast<UTT>(ah) << NumBits<UT>() | al;
+  UTT s = 0;
+
+  do {
+    s = u;
+    u = (a / s + s) / 2;
+  } while (u < s);
+
+  root = s;
+  return (a - s * s) != 0;
 }
 
 template <typename FT, typename UT>
@@ -126,12 +170,12 @@ FT SoftFloat::Add(FT a, FT b) {
   if (a_exp == 0)
     a_exp = 1;
   else
-    a_mant |= 1ull << (NumSignificandBits<FT>() + 3);
+    a_mant |= static_cast<UT>(1) << (NumSignificandBits<FT>() + 3);
 
   if (b_exp == 0)
     b_exp = 1;
   else
-    b_mant |= 1ull << (NumSignificandBits<FT>() + 3);
+    b_mant |= static_cast<UT>(1) << (NumSignificandBits<FT>() + 3);
 
   b_mant = RshiftRnd(b_mant, a_exp - b_exp);
 
@@ -183,12 +227,12 @@ FT SoftFloat::Sub(FT a, FT b) {
   if (a_exp == 0)
     a_exp = 1;
   else
-    a_mant |= 1ull << (NumSignificandBits<FT>() + 3);
+    a_mant |= static_cast<UT>(1) << (NumSignificandBits<FT>() + 3);
 
   if (b_exp == 0)
     b_exp = 1;
   else
-    b_mant |= 1ull << (NumSignificandBits<FT>() + 3);
+    b_mant |= static_cast<UT>(1) << (NumSignificandBits<FT>() + 3);
 
   b_mant = RshiftRnd(b_mant, a_exp - b_exp);
 
@@ -248,7 +292,7 @@ inline FT SoftFloat::Mul(FT a, FT b) {
       return FloatFrom3Tuple<FT>(r_sign, 0, 0);
     b_mant = NormalizeSubnormal<FT>(b_exp, b_mant);
   } else {
-    b_mant |= (UT)1 << NumSignificandBits<FT>();
+    b_mant |= static_cast<UT>(1) << NumSignificandBits<FT>();
   }
 
   i32 r_exp = a_exp + b_exp - (1 << (NumExponentBits<FT>() - 1)) + 2;
@@ -315,7 +359,7 @@ FT SoftFloat::Div(FT a, FT b) {
       return FloatFrom3Tuple<FT>(r_sign, 0, 0u);
     a_mant = NormalizeSubnormal<FT>(a_exp, a_mant);
   } else {
-    a_mant |= (UT)1 << NumSignificandBits<FT>();
+    a_mant |= static_cast<UT>(1) << NumSignificandBits<FT>();
   }
 
   i32 r_exp = a_exp - b_exp + (1 << (NumExponentBits<FT>() - 1)) - 1;
@@ -329,3 +373,201 @@ FT SoftFloat::Div(FT a, FT b) {
 template f16 SoftFloat::Div<f16>(f16 a, f16 b);
 template f32 SoftFloat::Div<f32>(f32 a, f32 b);
 template f64 SoftFloat::Div<f64>(f64 a, f64 b);
+
+template <typename FT>
+FT SoftFloat::Sqrt(FT a) {
+  using UT = FloatToUint<FT>::type;
+  u32 a_sign = std::signbit(a);
+  i32 a_exp = GetExponent<FT>(a);
+  UT a_mant = GetSignificand<FT>(a);
+
+  if (a_exp == MaxExponent<FT>()) {
+    if (a_mant != 0) {
+      if (IsSnan(a))
+        invalid = true;
+      return GetQnan<FT>();
+    } else if (a_sign) {
+      invalid = true;
+      return GetQnan<FT>();
+    } else {
+      return a;
+    }
+  }
+
+  if (a_sign) {
+    if (a_exp == 0 && a_mant == 0)
+      return a;  // -zero
+
+    invalid = true;
+    return GetQnan<FT>();
+  }
+
+  if (a_exp == 0) {
+    if (a_mant == 0)
+      return FloatFrom3Tuple<FT>(0, 0, 0);
+    a_mant = NormalizeSubnormal<FT>(a_exp, a_mant);
+  } else {
+    a_mant |= static_cast<UT>(1) << NumSignificandBits<FT>();
+  }
+
+  a_exp -= Bias<FT>();
+
+  if (a_exp & 1) {
+    a_exp--;
+    a_mant <<= 1;
+  }
+
+  a_exp = (a_exp >> 1) + Bias<FT>();
+  a_mant <<= (NumBits<FT>() - 4 - NumSignificandBits<FT>());
+  if (Usqrt<UT>(a_mant, a_mant, 0))
+    a_mant |= 1;
+
+  return Normalize<FT>(a_sign, a_exp, a_mant);
+}
+
+template f16 SoftFloat::Sqrt<f16>(f16 a);
+template f32 SoftFloat::Sqrt<f32>(f32 a);
+template f64 SoftFloat::Sqrt<f64>(f64 a);
+
+template <typename FT>
+FT SoftFloat::Fma(FT a, FT b, FT c) {
+  using UT = FloatToUint<FT>::type;
+  bool a_sign = std::signbit(a);
+  bool b_sign = std::signbit(b);
+  bool c_sign = std::signbit(c);
+  bool r_sign = a_sign ^ b_sign;
+  i32 a_exp = GetExponent<FT>(a);
+  i32 b_exp = GetExponent<FT>(b);
+  i32 c_exp = GetExponent<FT>(c);
+  UT a_mant = GetSignificand<FT>(a);
+  UT b_mant = GetSignificand<FT>(b);
+  UT c_mant = GetSignificand<FT>(c);
+
+  if (a_exp == MaxExponent<FT>() || b_exp == MaxExponent<FT>() || c_exp == MaxExponent<FT>()) {
+    if (IsNan(a) || IsNan(b) || IsNan(c)) {
+      if (IsSnan(a) || IsSnan(b) || IsSnan(c))
+        invalid = true;
+
+      if (IsNan(c) && ((IsZero(a) && IsInf(b)) || (IsZero(b) && IsInf(a)))) {
+        invalid = true;
+      }
+
+      return GetQnan<FT>();
+    } else {
+      if ((a_exp == MaxExponent<FT>() && (b_exp == 0 && b_mant == 0)) ||
+          (b_exp == MaxExponent<FT>() && (a_exp == 0 && a_mant == 0)) ||
+          ((a_exp == MaxExponent<FT>() || b_exp == MaxExponent<FT>()) &&
+           (c_exp == MaxExponent<FT>() && r_sign != c_sign))) {
+        invalid = true;
+        return GetQnan<FT>();
+      } else if (c_exp == MaxExponent<FT>()) {
+        return FloatFrom3Tuple<FT>(c_sign, MaxExponent<FT>(), 0);
+      } else {
+        return FloatFrom3Tuple<FT>(r_sign, MaxExponent<FT>(), 0);
+      }
+    }
+  }
+
+  if (a_exp == 0) {
+    if (a_mant == 0) {
+      if (c_exp || c_mant)
+        return c;
+
+      if (c_sign != r_sign)
+        r_sign = (rounding_mode == kRoundTowardNegative);
+      return FloatFrom3Tuple<FT>(r_sign, 0, 0);
+    }
+
+    a_mant = NormalizeSubnormal<FT>(a_exp, a_mant);
+  } else {
+    a_mant |= static_cast<UT>(1) << NumSignificandBits<FT>();
+  }
+
+  if (b_exp == 0) {
+    if (b_mant == 0) {
+      if (c_exp || c_mant)
+        return c;
+
+      if (c_sign != r_sign)
+        r_sign = (rounding_mode == kRoundTowardNegative);
+      return FloatFrom3Tuple<FT>(r_sign, 0, 0);
+    }
+
+    b_mant = NormalizeSubnormal<FT>(b_exp, b_mant);
+  } else {
+    b_mant |= static_cast<UT>(1) << NumSignificandBits<FT>();
+  }
+
+  i32 r_exp = a_exp + b_exp - (1 << (NumExponentBits<FT>() - 1)) + 3;
+  auto [r_mant0, r_mant1] = Umul<UT>(a_mant << NumRoundBits<FT>(), b_mant << NumRoundBits<FT>());
+
+  if (r_mant1 < (1ull << (NumBits<FT>() - 3))) {
+    r_mant1 = (r_mant1 << 1) | (r_mant0 >> (NumBits<FT>() - 1));
+    r_mant0 <<= 1;
+    r_exp--;
+  }
+
+  if (c_exp == 0) {
+    if (c_mant == 0) {
+      r_mant1 |= (r_mant0 != 0);
+      return Normalize<FT>(r_sign, r_exp, r_mant1);
+    }
+    c_mant = NormalizeSubnormal<FT>(c_exp, c_mant);
+  } else {
+    c_mant |= static_cast<UT>(1) << NumSignificandBits<FT>();
+  }
+
+  c_exp++;
+
+  UT c_mant1 = c_mant << (NumRoundBits<FT>() - 1);
+  UT c_mant0 = 0;
+
+  if (!(r_exp > c_exp || (r_exp == c_exp && r_mant1 >= c_mant1))) {
+    UT tmp = r_mant1;
+    r_mant1 = c_mant1;
+    c_mant1 = tmp;
+    tmp = r_mant0;
+    r_mant0 = c_mant0;
+    c_mant0 = tmp;
+    i32 c_tmp = r_exp;
+    r_exp = c_exp;
+    c_exp = c_tmp;
+    c_tmp = r_sign;
+    r_sign = c_sign;
+    c_sign = c_tmp;
+  }
+
+  i32 shift = r_exp - c_exp;
+  if (shift >= 2 * (i32)NumBits<FT>()) {
+    c_mant0 = (c_mant0 | c_mant1) != 0;
+    c_mant1 = 0;
+  } else if (shift >= (i32)NumBits<FT>() + 1) {
+    c_mant0 = RshiftRnd<UT>(c_mant1, shift - NumBits<FT>());
+    c_mant1 = 0;
+  } else if (shift == NumBits<FT>()) {
+    c_mant0 = c_mant1 | (c_mant0 != 0);
+    c_mant1 = 0;
+  } else if (shift != 0) {
+    UT mask = (1ull << shift) - 1;
+    c_mant0 = (c_mant1 << (NumBits<FT>() - shift)) | (c_mant0 >> shift) | ((c_mant0 & mask) != 0);
+    c_mant1 = c_mant1 >> shift;
+  }
+
+  if (r_sign == c_sign) {
+    r_mant0 += c_mant0;
+    r_mant1 += c_mant1 + (r_mant0 < c_mant0);
+  } else {
+    UT tmp = r_mant0;
+    r_mant0 -= c_mant0;
+    r_mant1 = r_mant1 - c_mant1 - (r_mant0 > tmp);
+    if ((r_mant0 | r_mant1) == 0) {
+      r_sign = (rounding_mode == kRoundTowardNegative);
+    }
+  }
+
+  return Normalize<FT>(r_sign, r_exp, r_mant1, r_mant0);
+}
+
+template f16 SoftFloat::Fma<f16>(f16 a, f16 b, f16 c);
+template f32 SoftFloat::Fma<f32>(f32 a, f32 b, f32 c);
+template f64 SoftFloat::Fma<f64>(f64 a, f64 b, f64 c);
