@@ -571,3 +571,54 @@ FT SoftFloat::Fma(FT a, FT b, FT c) {
 template f16 SoftFloat::Fma<f16>(f16 a, f16 b, f16 c);
 template f32 SoftFloat::Fma<f32>(f32 a, f32 b, f32 c);
 template f64 SoftFloat::Fma<f64>(f64 a, f64 b, f64 c);
+
+template <typename TFROM, typename TTO>
+TTO SoftFloat::FToF(TFROM a) {
+  static_assert(std::is_floating_point_v<TFROM>);
+  static_assert(std::is_floating_point_v<TTO>);
+  static_assert(NumBits<TFROM>() > NumBits<TTO>());
+  using UTFROM = FloatToUint<TFROM>::type;
+  using UTTO = FloatToUint<TTO>::type;
+
+  UTFROM a_mant = GetSignificand(a);
+  i32 a_exp = GetExponent(a);
+  bool a_sign = std::signbit(a);
+
+  if (a_exp == MaxExponent<TFROM>()) {
+    if (a_mant != 0) {
+      if (IsSnan(a))
+        invalid = true;
+      return GetQnan<TTO>();
+    }
+
+    return FloatFrom3Tuple<TTO>(a_sign, MaxExponent<TTO>(), 0);
+  }
+
+  if (a_exp == 0) {
+    if (a_mant == 0)
+      return FloatFrom3Tuple<TTO>(a_sign, 0, 0);
+    NormalizeSubnormal<TTO>(a_exp, a_mant);
+  } else {
+    a_mant |= static_cast<UTFROM>(1) << NumSignificandBits<TFROM>();
+  }
+
+  a_exp = a_exp - Bias<TFROM>() + Bias<TTO>();
+  a_mant = RshiftRnd<UTFROM>(a_mant, NumSignificandBits<TFROM>() - (NumBits<TTO>() - 2));
+  return Normalize<TTO>(a_sign, a_exp, static_cast<UTTO>(a_mant));
+}
+
+template f16 SoftFloat::FToF<f32, f16>(f32 a);
+template f16 SoftFloat::FToF<f64, f16>(f64 a);
+template f32 SoftFloat::FToF<f64, f32>(f64 a);
+
+f16 SoftFloat::F32ToF16(f32 a) {
+  return FToF<f32, f16>(a);
+}
+
+f16 SoftFloat::F64ToF16(f64 a) {
+  return FToF<f64, f16>(a);
+}
+
+f32 SoftFloat::F64ToF32(f64 a) {
+  return FToF<f64, f32>(a);
+}

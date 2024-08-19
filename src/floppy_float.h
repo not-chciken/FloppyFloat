@@ -8,44 +8,11 @@
  **************************************************************************************************/
 
 #include "utils.h"
-
-class FloppyFloat {
-  static_assert(std::numeric_limits<FfUtils::f16>::is_iec559);
-  static_assert(std::numeric_limits<FfUtils::f32>::is_iec559);
-  static_assert(std::numeric_limits<FfUtils::f64>::is_iec559);
-  static_assert(std::numeric_limits<FfUtils::f128>::is_iec559);
-
+#include "soft_float.h"
+class FloppyFloat : public SoftFloat {
  public:
-  // See IEEE 754-2019: 4.3 Rounding-direction attributes
-  enum RoundingMode {
-    kRoundTiesToEven,
-    kRoundTiesToAway,
-    kRoundTowardPositive,
-    kRoundTowardNegative,
-    kRoundTowardZero
-  } rounding_mode;
-
-  // Floating Exception Flags.
-  bool invalid;
-  bool division_by_zero;
-  bool overflow;
-  bool underflow;
-  bool inexact;
-
-  // kNanPropArm64DefaultNan => FPCR.DN = 1
-  // kNanPropArm64 => FPCR.DN = 0
-  enum NanPropagationSchemes {
-    kNanPropRiscv,
-    kNanPropX86sse,
-    kNanPropArm64DefaultNan,
-    kNanPropArm64
-  } nan_propagation_scheme;
-  bool tininess_before_rounding = false;
-  bool invalid_fma = true;  // If true, FMA raises invalid for "∞ × 0 + qNaN". See IEE 754 ("7.2 Invalid operation").
 
   FloppyFloat();
-
-  void ClearFlags();
 
   template <typename FT>
   void SetQnan(typename FfUtils::FloatToUint<FT>::type val);
@@ -135,31 +102,10 @@ class FloppyFloat {
   FfUtils::f32 U64ToF32(FfUtils::u64 a);
   // FfUtils::f64 U64ToF64(FfUtils::u64 a); // TODO: implement
 
-  void SetupToArm64();
-  void SetupToRiscv();
-  void SetupTox86();
-
  protected:
   template <typename FT, typename TFT, RoundingMode rm>
   constexpr FT RoundResult(TFT residual, FT result);
   template <typename FT>
   constexpr FT PropagateNan(FT a, FT b);
   constexpr FfUtils::f64 PropagateNan(FfUtils::f32 a);
-
-  FfUtils::f16 qnan16_;
-  FfUtils::f32 qnan32_;
-  FfUtils::f64 qnan64_;
-
-  FfUtils::i32 nan_limit_i32_;
-  FfUtils::i32 max_limit_i32_;
-  FfUtils::i32 min_limit_i32_;
-  FfUtils::u32 nan_limit_u32_;
-  FfUtils::u32 max_limit_u32_;
-  FfUtils::u32 min_limit_u32_;
-  FfUtils::i64 nan_limit_i64_;
-  FfUtils::i64 max_limit_i64_;
-  FfUtils::i64 min_limit_i64_;
-  FfUtils::u64 nan_limit_u64_;
-  FfUtils::u64 max_limit_u64_;
-  FfUtils::u64 min_limit_u64_;
 };

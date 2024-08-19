@@ -135,20 +135,12 @@ constexpr f64 FloppyFloat::GetQnan<f64>() {
   return qnan64_;
 }
 
-FloppyFloat::FloppyFloat() {
+FloppyFloat::FloppyFloat() : SoftFloat() {
   SetQnan<f16>(0x7e00u);
   SetQnan<f32>(0x7fc00000u);
   SetQnan<f64>(0x7ff8000000000000ull);
   ClearFlags();
   tininess_before_rounding = false;
-}
-
-void FloppyFloat::ClearFlags() {
-  invalid = false;
-  division_by_zero = false;
-  overflow = false;
-  underflow = false;
-  inexact = false;
 }
 
 template <typename FT, FloppyFloat::RoundingMode rm>
@@ -634,6 +626,15 @@ template f64 FloppyFloat::Sqrt<f64, FloppyFloat::kRoundTowardZero>(f64 a);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
 FT FloppyFloat::Fma(FT a, FT b, FT c) {
+  if constexpr (std::is_same_v<FT, f16>) {
+    // TODO: Remove once the f16 FMA issue of the standard library is solved.
+    RoundingMode old_rm = rounding_mode;
+    rounding_mode = rm;
+    FT d = SoftFloat::Fma(a, b, c);
+    rounding_mode = old_rm;
+    return d;
+  }
+
   FT d = std::fma(a, b, c);
 
   if (IsInfOrNan(d)) [[unlikely]] {
@@ -1357,15 +1358,15 @@ f16 FloppyFloat::I32ToF16(i32 a) {
   f16 af = static_cast<f16>(a);
   u32 ua = std::abs(a);
   u32 shifted_ua = ua << std::countl_zero(ua);
-  u32 r =  shifted_ua & 0x1fffffu;
+  u32 r = shifted_ua & 0x1fffffu;
 
   if (r != 0) {
     inexact = true;
-    if constexpr(rm == kRoundTiesToEven) {
+    if constexpr (rm == kRoundTiesToEven) {
       return af;
     }
     bool even = shifted_ua & 0x100u;
-    if constexpr(rm == kRoundTowardPositive) {
+    if constexpr (rm == kRoundTowardPositive) {
       if (a > 0) {
         if ((r < 1048576) || ((r == 1048576) && !even))
           af = NextUpNoNegZero(af);
@@ -1373,7 +1374,7 @@ f16 FloppyFloat::I32ToF16(i32 a) {
         if ((r > 1048576) || ((r == 1048576) && even))
           af = NextUpNoNegZero(af);
       }
-    } else if constexpr(rm == kRoundTowardNegative) {
+    } else if constexpr (rm == kRoundTowardNegative) {
       if (a > 0) {
         if ((r > 1048576) || ((r == 1048576) && even))
           af = NextDownNoPosZero(af);
@@ -1381,19 +1382,19 @@ f16 FloppyFloat::I32ToF16(i32 a) {
         if ((r < 1048576) || ((r == 1048576) && !even))
           af = NextDownNoPosZero(af);
       }
-    } else if constexpr(rm == kRoundTowardZero) {
-        if ((r > 1048576) || ((r == 1048576) && even)) {
-          if (a > 0) {
-            af = NextDownNoPosZero(af);
-          } else {
-            af = NextUpNoNegZero(af);
-          }
+    } else if constexpr (rm == kRoundTowardZero) {
+      if ((r > 1048576) || ((r == 1048576) && even)) {
+        if (a > 0) {
+          af = NextDownNoPosZero(af);
+        } else {
+          af = NextUpNoNegZero(af);
         }
-    } else if constexpr(rm == kRoundTiesToAway) {
+      }
+    } else if constexpr (rm == kRoundTiesToAway) {
       if ((a > 0) && (r == 1048576) && !even)
-          af = NextUpNoNegZero(af);
+        af = NextUpNoNegZero(af);
       if ((a < 0) && (r == 1048576) && even)
-          af = NextDownNoPosZero(af);
+        af = NextDownNoPosZero(af);
     }
   }
 
@@ -1428,15 +1429,15 @@ f32 FloppyFloat::I32ToF32(i32 a) {
   f32 af = static_cast<f32>(a);
   u32 ua = std::abs(a);
   u32 shifted_ua = ua << std::countl_zero(ua);
-  u32 r =  shifted_ua & 0xffu;
+  u32 r = shifted_ua & 0xffu;
 
   if (r != 0) {
     inexact = true;
-    if constexpr(rm == kRoundTiesToEven) {
+    if constexpr (rm == kRoundTiesToEven) {
       return af;
     }
     bool even = shifted_ua & 0x100u;
-    if constexpr(rm == kRoundTowardPositive) {
+    if constexpr (rm == kRoundTowardPositive) {
       if (a > 0) {
         if ((r < 128) || ((r == 128) && !even))
           af = NextUpNoNegZero(af);
@@ -1444,7 +1445,7 @@ f32 FloppyFloat::I32ToF32(i32 a) {
         if ((r > 128) || ((r == 128) && even))
           af = NextUpNoNegZero(af);
       }
-    } else if constexpr(rm == kRoundTowardNegative) {
+    } else if constexpr (rm == kRoundTowardNegative) {
       if (a > 0) {
         if ((r > 128) || ((r == 128) && even))
           af = NextDownNoPosZero(af);
@@ -1452,19 +1453,19 @@ f32 FloppyFloat::I32ToF32(i32 a) {
         if ((r < 128) || ((r == 128) && !even))
           af = NextDownNoPosZero(af);
       }
-    } else if constexpr(rm == kRoundTowardZero) {
-        if ((r > 128) || ((r == 128) && even)) {
-          if (a > 0) {
-            af = NextDownNoPosZero(af);
-          } else {
-            af = NextUpNoNegZero(af);
-          }
+    } else if constexpr (rm == kRoundTowardZero) {
+      if ((r > 128) || ((r == 128) && even)) {
+        if (a > 0) {
+          af = NextDownNoPosZero(af);
+        } else {
+          af = NextUpNoNegZero(af);
         }
-    } else if constexpr(rm == kRoundTiesToAway) {
+      }
+    } else if constexpr (rm == kRoundTiesToAway) {
       if ((a > 0) && (r == 128) && !even)
-          af = NextUpNoNegZero(af);
+        af = NextUpNoNegZero(af);
       if ((a < 0) && (r == 128) && even)
-          af = NextDownNoPosZero(af);
+        af = NextDownNoPosZero(af);
     }
   }
 
@@ -1502,24 +1503,24 @@ template <FloppyFloat::RoundingMode rm>
 f32 FloppyFloat::U32ToF32(u32 a) {
   f32 af = static_cast<f32>(a);
   u32 shifted_ua = a << std::countl_zero(a);
-  u32 r =  shifted_ua & 0xffu;
+  u32 r = shifted_ua & 0xffu;
 
   if (r != 0) {
     inexact = true;
-    if constexpr(rm == kRoundTiesToEven) {
+    if constexpr (rm == kRoundTiesToEven) {
       return af;
     }
     bool even = shifted_ua & 0x100u;
-    if constexpr(rm == kRoundTowardPositive) {
+    if constexpr (rm == kRoundTowardPositive) {
       if ((r < 128) || ((r == 128) && !even))
         af = NextUpNoNegZero(af);
-    } else if constexpr(rm == kRoundTowardNegative) {
+    } else if constexpr (rm == kRoundTowardNegative) {
       if ((r > 128) || ((r == 128) && even))
         af = NextDownNoPosZero(af);
-    } else if constexpr(rm == kRoundTowardZero) {
+    } else if constexpr (rm == kRoundTowardZero) {
       if ((r > 128) || ((r == 128) && even))
         af = NextDownNoPosZero(af);
-    } else if constexpr(rm == kRoundTiesToAway) {
+    } else if constexpr (rm == kRoundTiesToAway) {
       if ((r == 128) && !even)
         af = NextUpNoNegZero(af);
     }
@@ -1555,24 +1556,24 @@ template <FloppyFloat::RoundingMode rm>
 f32 FloppyFloat::U64ToF32(u64 a) {
   f32 af = static_cast<f32>(a);
   u64 shifted_ua = a << std::countl_zero(a);
-  u64 r =  shifted_ua & 0x7ffull;
+  u64 r = shifted_ua & 0x7ffull;
 
   if (r != 0) {
     inexact = true;
-    if constexpr(rm == kRoundTiesToEven) {
+    if constexpr (rm == kRoundTiesToEven) {
       return af;
     }
     bool even = shifted_ua & 0x100u;
-    if constexpr(rm == kRoundTowardPositive) {
+    if constexpr (rm == kRoundTowardPositive) {
       if ((r < 1024) || ((r == 1024) && !even))
         af = NextUpNoNegZero(af);
-    } else if constexpr(rm == kRoundTowardNegative) {
+    } else if constexpr (rm == kRoundTowardNegative) {
       if ((r > 1024) || ((r == 1024) && even))
         af = NextDownNoPosZero(af);
-    } else if constexpr(rm == kRoundTowardZero) {
+    } else if constexpr (rm == kRoundTowardZero) {
       if ((r > 1024) || ((r == 1024) && even))
         af = NextDownNoPosZero(af);
-    } else if constexpr(rm == kRoundTiesToAway) {
+    } else if constexpr (rm == kRoundTiesToAway) {
       if ((r == 1024) && !even)
         af = NextUpNoNegZero(af);
     }
@@ -1602,78 +1603,4 @@ u32 FloppyFloat::Class(FT a) {
   return (sign && is_inf) << 0 | (sign && !is_inf && !is_tiny) << 1 | (sign && is_subn) << 2 | (sign && is_zero) << 3 |
          (!sign && is_zero) << 4 | (!sign && is_subn) << 5 | (!sign && !is_inf && !is_tiny) << 6 |
          (!sign && is_inf) << 7 | (IsSnan(a)) << 8 | (IsNan(a) && !IsSnan(a)) << 9;
-}
-
-void FloppyFloat::SetupToArm64() {
-  SetQnan<f16>(0x7e00u);
-  SetQnan<f32>(0x7fc00000u);
-  SetQnan<f64>(0x7ff8000000000000ull);
-  tininess_before_rounding = true;
-  nan_propagation_scheme = kNanPropArm64DefaultNan;  // Shares the same NaN propagation as ARM.
-
-  nan_limit_i32_ = 0;
-  max_limit_i32_ = std::numeric_limits<i32>::max();
-  min_limit_i32_ = std::numeric_limits<i32>::min();
-
-  nan_limit_u32_ = 0;
-  max_limit_u32_ = std::numeric_limits<u32>::max();
-  min_limit_u32_ = std::numeric_limits<u32>::min();
-
-  nan_limit_i64_ = 0;
-  max_limit_i64_ = std::numeric_limits<i64>::max();
-  min_limit_i64_ = std::numeric_limits<i64>::min();
-
-  nan_limit_u64_ = 0;
-  max_limit_u64_ = std::numeric_limits<u64>::max();
-  min_limit_u64_ = std::numeric_limits<u64>::min();
-}
-
-void FloppyFloat::SetupToRiscv() {
-  SetQnan<f16>(0x7e00u);
-  SetQnan<f32>(0x7fc00000u);
-  SetQnan<f64>(0x7ff8000000000000ull);
-  tininess_before_rounding = false;
-  invalid_fma = true;
-  nan_propagation_scheme = kNanPropRiscv;
-
-  nan_limit_i32_ = std::numeric_limits<i32>::max();
-  max_limit_i32_ = std::numeric_limits<i32>::max();
-  min_limit_i32_ = std::numeric_limits<i32>::min();
-
-  nan_limit_u32_ = std::numeric_limits<u32>::max();
-  max_limit_u32_ = std::numeric_limits<u32>::max();
-  min_limit_u32_ = std::numeric_limits<u32>::min();
-
-  nan_limit_i64_ = std::numeric_limits<i64>::max();
-  max_limit_i64_ = std::numeric_limits<i64>::max();
-  min_limit_i64_ = std::numeric_limits<i64>::min();
-
-  nan_limit_u64_ = std::numeric_limits<u64>::max();
-  max_limit_u64_ = std::numeric_limits<u64>::max();
-  min_limit_u64_ = std::numeric_limits<u64>::min();
-}
-
-void FloppyFloat::SetupTox86() {
-  SetQnan<f16>(0xfe00u);
-  SetQnan<f32>(0xffc00000u);
-  SetQnan<f64>(0xfff8000000000000ull);
-  tininess_before_rounding = false;
-  invalid_fma = false;
-  nan_propagation_scheme = kNanPropX86sse;
-
-  nan_limit_i32_ = std::numeric_limits<i32>::min();
-  max_limit_i32_ = std::numeric_limits<i32>::min();
-  min_limit_i32_ = std::numeric_limits<i32>::min();
-
-  nan_limit_u32_ = std::numeric_limits<u32>::max();
-  max_limit_u32_ = std::numeric_limits<u32>::max();
-  min_limit_u32_ = std::numeric_limits<u32>::max();
-
-  nan_limit_i64_ = std::numeric_limits<i64>::min();
-  max_limit_i64_ = std::numeric_limits<i64>::min();
-  min_limit_i64_ = std::numeric_limits<i64>::min();
-
-  nan_limit_u64_ = std::numeric_limits<u64>::max();
-  max_limit_u64_ = std::numeric_limits<u64>::max();
-  min_limit_u64_ = std::numeric_limits<u64>::max();
 }
