@@ -18,11 +18,13 @@ using i8 = int8_t;
 using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
+using i128 = __int128_t;
 
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
+using u128 = __uint128_t;
 
 template <typename T>
 using nl = std::numeric_limits<T>;
@@ -43,6 +45,21 @@ struct TwiceWidthType<f32> {
 template <>
 struct TwiceWidthType<f64> {
   using type = f128;
+};
+
+template <>
+struct TwiceWidthType<u16> {
+  using type = u32;
+};
+
+template <>
+struct TwiceWidthType<u32> {
+  using type = u64;
+};
+
+template <>
+struct TwiceWidthType<u64> {
+  using type = u128;
 };
 
 template <typename T>
@@ -111,6 +128,73 @@ struct QuietBit<f64> {
   static constexpr u64 u = 0x0008000000000000ull;
 };
 
+template <typename T>
+constexpr int NumBits() {
+  if constexpr (std::is_same_v<T, f16> || std::is_same_v<T, u16>) {
+    return 16;
+  } else if constexpr (std::is_same_v<T, f32> || std::is_same_v<T, u32>) {
+    return 32;
+  } else if constexpr (std::is_same_v<T, f64> || std::is_same_v<T, u64>) {
+    return 64;
+  } else {
+    static_assert("Type needs to be f16, f32, or f64");
+  }
+}
+
+template <typename FT>
+constexpr int NumSignificandBits() {
+  static_assert(std::is_floating_point<FT>::value);
+  if constexpr (std::is_same<FT, f16>::value) {
+    return 10;
+  } else if constexpr (std::is_same<FT, f32>::value) {
+    return 23;
+  } else if constexpr (std::is_same<FT, f64>::value) {
+    return 52;
+  } else {
+    static_assert("Type needs to be f16, f32, or f64");
+  }
+}
+
+template <typename FT>
+constexpr int NumImantBits() {
+  static_assert(std::is_floating_point<FT>::value);
+  if constexpr (std::is_same<FT, f16>::value) {
+    return 14;
+  } else if constexpr (std::is_same<FT, f32>::value) {
+    return 30;
+  } else if constexpr (std::is_same<FT, f64>::value) {
+    return 62;
+  } else {
+    static_assert("Type needs to be f16, f32, or f64");
+  }
+}
+
+template <typename FT>
+constexpr int NumExponentBits() {
+  static_assert(std::is_floating_point<FT>::value);
+  if constexpr (std::is_same<FT, f16>::value) {
+    return 5;
+  } else if constexpr (std::is_same<FT, f32>::value) {
+    return 8;
+  } else if constexpr (std::is_same<FT, f64>::value) {
+    return 11;
+  } else {
+    static_assert("Type needs to be f16, f32, or f64");
+  }
+}
+
+template <typename FT>
+constexpr int NumRoundBits() {
+  static_assert(std::is_floating_point<FT>::value);
+  return NumImantBits<FT>() - NumSignificandBits<FT>();
+}
+
+template <typename FT>
+constexpr u64 RoundMask() {
+  static_assert(std::is_floating_point<FT>::value);
+  return (1ull << NumRoundBits<FT>()) - 1ull;
+}
+
 template <typename FT>
 constexpr FT ClearSignificand(FT a) {
   static_assert(std::is_floating_point<FT>::value);
@@ -143,44 +227,44 @@ constexpr FT CreateQnanWithPayload(typename FloatToUint<FT>::type payload) {
   return std::bit_cast<FT>((UT)(u | payload));
 }
 
-template <typename FT, typename UT>
+template <typename FT>
 constexpr auto FloatFrom3Tuple(bool sign, u32 exponent, u64 significand) {
   static_assert(std::is_floating_point<FT>::value);
   using UT = typename FloatToUint<FT>::type;
-  UT u;
+  UT u = 0;
   if constexpr (std::is_same<FT, f16>::value) {
     u |= static_cast<UT>(sign) << 15;
     u |= static_cast<UT>(exponent) << NumSignificandBits<FT>();
-    u |= static_cast<UT>(significand);
+    u |= static_cast<UT>(significand) & 0x3ffu;
   } else if constexpr (std::is_same<FT, f32>::value) {
     u |= static_cast<UT>(sign) << 31;
     u |= static_cast<UT>(exponent) << NumSignificandBits<FT>();
-    u |= static_cast<UT>(significand);
+    u |= static_cast<UT>(significand) & 0x007fffffu;
   } else if constexpr (std::is_same<FT, f64>::value) {
     u |= static_cast<UT>(sign) << 63;
     u |= static_cast<UT>(exponent) << NumSignificandBits<FT>();
-    u |= static_cast<UT>(significand);
+    u |= static_cast<UT>(significand) & 0xfffffffffffffull;
   } else {
     static_assert("Type needs to be f16, f32, or f64");
   }
-  return std::bit_cast<FT(u);
+  return std::bit_cast<FT>(u);
 }
 
 template <typename FT>
-constexpr u32 GetExponent(FT a) {
+constexpr auto GetSignificand(FT a) {
   static_assert(std::is_floating_point<FT>::value);
   using UT = typename FloatToUint<FT>::type;
   UT u = std::bit_cast<typename FloatToUint<FT>::type>(a);
-  if constexpr (std::is_same<FT, f16>::value) {
+  if constexpr (std::is_same_v<FT, f16>) {
     u &= 0x3ffu;
-  } else if constexpr (std::is_same<FT, f32>::value) {
+  } else if constexpr (std::is_same_v<FT, f32>) {
     u &= 0x007fffffu;
-  } else if constexpr (std::is_same<FT, f64>::value) {
+  } else if constexpr (std::is_same_v<FT, f64>) {
     u &= 0xfffffffffffffull;
   } else {
     static_assert("Type needs to be f16, f32, or f64");
   }
-  return (u32)u;
+  return u;
 }
 
 constexpr u32 GetPayload(f32 a) {
@@ -194,15 +278,15 @@ constexpr bool GetQuietBit(FT a) {
 }
 
 template <typename FT>
-constexpr auto GetSignificand(FT a) {
+constexpr auto GetExponent(FT a) {
   static_assert(std::is_floating_point<FT>::value);
   using UT = typename FloatToUint<FT>::type;
   UT u = std::bit_cast<typename FloatToUint<FT>::type>(a);
-  if constexpr (std::is_same<FT, f16>::value) {
-    u = (u >> NumSignificandBits<FT>()) & 0x1bu;
-  } else if constexpr (std::is_same<FT, f32>::value) {
+  if constexpr (std::is_same_v<FT, f16>) {
+    u = (u >> NumSignificandBits<FT>()) & 0x1fu;
+  } else if constexpr (std::is_same_v<FT, f32>) {
     u = (u >> NumSignificandBits<FT>()) & 0xffu;
-  } else if constexpr (std::is_same<FT, f64>::value) {
+  } else if constexpr (std::is_same_v<FT, f64>) {
     u = (u >> NumSignificandBits<FT>()) & 0x7ffull;
   } else {
     static_assert("Type needs to be f16, f32, or f64");
@@ -261,6 +345,12 @@ constexpr bool IsPosZero(FT a) {
 }
 
 template <typename FT>
+constexpr bool IsQnan(FT a) {
+  static_assert(std::is_floating_point<FT>::value);
+  return IsNan(a) && (std::bit_cast<typename FloatToUint<FT>::type>(a) & QuietBit<FT>::u);
+}
+
+template <typename FT>
 constexpr bool IsSnan(FT a) {
   static_assert(std::is_floating_point<FT>::value);
   return IsNan(a) && !(std::bit_cast<typename FloatToUint<FT>::type>(a) & QuietBit<FT>::u);
@@ -299,7 +389,7 @@ constexpr FT NextUpNoNegZero(FT a) {
 }
 
 template <typename FT>
-constexpr u32 MaxExponent() {
+constexpr i32 MaxExponent() {
   static_assert(std::is_floating_point<FT>::value);
   if constexpr (std::is_same<FT, f16>::value) {
     return 31;
@@ -312,33 +402,27 @@ constexpr u32 MaxExponent() {
   }
 }
 
-
 template <typename FT>
-constexpr int NumSignificandBits() {
+constexpr u64 MaxSignificand() {
   static_assert(std::is_floating_point<FT>::value);
-  if constexpr (std::is_same<FT, f16>::value) {
-    return 10;
-  } else if constexpr (std::is_same<FT, f32>::value) {
-    return 23;
-  } else if constexpr (std::is_same<FT, f64>::value) {
-    return 52;
-  } else {
-    static_assert("Type needs to be f16, f32, or f64");
-  }
+  return (1ull << NumSignificandBits<FT>()) - 1ull;
 }
 
 template <typename FT>
-constexpr int NumExponentBits() {
+constexpr auto SignMask() {
   static_assert(std::is_floating_point<FT>::value);
-  if constexpr (std::is_same<FT, f16>::value) {
-    return 5;
-  } else if constexpr (std::is_same<FT, f32>::value) {
-    return 8;
-  } else if constexpr (std::is_same<FT, f64>::value) {
-    return 11;
+  using UT = typename FloatToUint<FT>::type;
+  UT u;
+  if constexpr (std::is_same_v<FT, f16>) {
+    u = 1u << 15;
+  } else if constexpr (std::is_same_v<FT, f32>) {
+    u = 1u << 31;
+  } else if constexpr (std::is_same_v<FT, f64>) {
+    u = 1ull << 63;
   } else {
     static_assert("Type needs to be f16, f32, or f64");
   }
+  return u;
 }
 
 };
