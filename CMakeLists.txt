@@ -22,7 +22,7 @@ enable_testing()
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_STANDARD 23)
 
-add_library(floppy_float STATIC OBJECT src/floppy_float.cpp)
+add_library(floppy_float STATIC OBJECT src/floppy_float.cpp src/soft_float.cpp src/vfpu.cpp)
 set_property(TARGET floppy_float PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_compile_options(floppy_float PUBLIC -g -O3 -march=native)
 
@@ -32,7 +32,7 @@ set_target_properties(floppy_float_shared PROPERTIES OUTPUT_NAME "FloppyFloat")
 add_library(floppy_float_static STATIC $<TARGET_OBJECTS:floppy_float>)
 set_target_properties(floppy_float_static PROPERTIES OUTPUT_NAME "FloppyFloat")
 
-add_library(floppy_float_static_test STATIC src/floppy_float.cpp)
+add_library(floppy_float_static_test STATIC src/floppy_float.cpp src/soft_float.cpp src/vfpu.cpp)
 target_compile_options(floppy_float_static_test PUBLIC -O0 -g --coverage)
 set_target_properties(floppy_float_static_test PROPERTIES OUTPUT_NAME "FloppyFloatTest")
 

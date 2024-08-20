@@ -165,20 +165,20 @@ constexpr FT FloppyFloat::RoundResult([[maybe_unused]] TFT residual, FT result) 
   if constexpr (rm == kRoundTiesToEven) {
     // Nothing to do.
   } else if constexpr (rm == kRoundTowardPositive) {
-    if (residual < 0.) {
+    if (residual < static_cast<FT>(0.f)) {
       result = NextUpNoNegZero(result);
       overflow = IsPosInf(result) ? true : overflow;
     }
   } else if constexpr (rm == kRoundTowardNegative) {
-    if (residual > 0.) {
+    if (residual > static_cast<FT>(0.f)) {
       result = NextDownNoPosZero(result);
       overflow = IsNegInf(result) ? true : overflow;
     }
   } else if constexpr (rm == kRoundTowardZero) {
-    if (residual < 0. && result < 0.) {  // Fix a round-down.
+    if (residual < static_cast<FT>(0.f) && result < static_cast<FT>(0.f)) {  // Fix a round-down.
       result = NextUpNoNegZero(result);
       overflow = IsPosInf(result) ? true : overflow;
-    } else if (residual > 0 && result > 0) {  // Fix a round-up.
+    } else if (residual > static_cast<FT>(0.f) && result > static_cast<FT>(0.f)) {  // Fix a round-up.
       result = NextDownNoPosZero(result);
       overflow = IsNegInf(result) ? true : overflow;
     }
@@ -277,6 +277,28 @@ constexpr bool IsOverflow(FT a, FT b, FT c) {
     static_assert("Using unsupported rounding mode");
   }
 }
+
+template <typename FT>
+FT FloppyFloat::Add(FT a, FT b) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return Add<FT, kRoundTiesToEven>(a, b);
+  case kRoundTiesToAway:
+    return Add<FT, kRoundTiesToAway>(a, b);
+  case kRoundTowardPositive:
+    return Add<FT, kRoundTowardPositive>(a, b);
+  case kRoundTowardNegative:
+    return Add<FT, kRoundTowardNegative>(a, b);
+  case kRoundTowardZero:
+    return Add<FT,kRoundTowardZero>(a, b);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template f16 FloppyFloat::Add<f16>(f16 a, f16 b);
+template f32 FloppyFloat::Add<f32>(f32 a, f32 b);
+template f64 FloppyFloat::Add<f64>(f64 a, f64 b);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
 FT FloppyFloat::Add(FT a, FT b) {

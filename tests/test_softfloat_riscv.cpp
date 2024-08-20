@@ -119,6 +119,7 @@ void DoTest(FFFUNC ff_func, SFFUNC sf_func) {
 
 TEST(SoftFloatRiscvTests, Addf16RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
+  ff.rounding_mode = FloppyFloat::kRoundTiesToEven;
   auto ff_func = std::bind(&FloppyFloat::Add<f16>, &ff, _1, _2);
   auto sf_func = std::bind(&::f16_add, _1, _2);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
@@ -126,7 +127,8 @@ TEST(SoftFloatRiscvTests, Addf16RoundNear) {
 
 TEST(SoftFloatRiscvTests, Addf16RoundPos) {
   ::softfloat_roundingMode = ::softfloat_round_max;
-  auto ff_func = std::bind(&FloppyFloat::Add<f16, FloppyFloat::kRoundTowardPositive>, &ff, _1, _2);
+  ff.rounding_mode = FloppyFloat::kRoundTowardPositive;
+  auto ff_func = std::bind(&FloppyFloat::Add<f16>, &ff, _1, _2);
   auto sf_func = std::bind(&::f16_add, _1, _2);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
@@ -154,7 +156,7 @@ TEST(SoftFloatRiscvTests, Addf16RoundMag) {
 
 TEST(SoftFloatRiscvTests, Subf16RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Sub<f16>, &ff, _1, _2);
+  auto ff_func = std::bind(&FloppyFloat::Sub<f16, FloppyFloat::kRoundTiesToEven>, &ff, _1, _2);
   auto sf_func = std::bind(&::f16_sub, _1, _2);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
@@ -189,7 +191,7 @@ TEST(SoftFloatRiscvTests, Subf16RoundMag) {
 
 TEST(SoftFloatRiscvTests, Mulf16RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Mul<f16>, &ff, _1, _2);
+  auto ff_func = std::bind(&FloppyFloat::Mul<f16, FloppyFloat::kRoundTiesToEven>, &ff, _1, _2);
   auto sf_func = std::bind(&::f16_mul, _1, _2);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
@@ -217,7 +219,7 @@ TEST(SoftFloatRiscvTests, Mulf16RoundZero) {
 
 TEST(SoftFloatRiscvTests, Divf16RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Div<f16>, &ff, _1, _2);
+  auto ff_func = std::bind(&FloppyFloat::Div<f16, FloppyFloat::kRoundTiesToEven>, &ff, _1, _2);
   auto sf_func = std::bind(&::f16_div, _1, _2);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
@@ -246,7 +248,7 @@ TEST(SoftFloatRiscvTests, Divf16RoundZero) {
 
 TEST(SoftFloatRiscvTests, Sqrtf16RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Sqrt<f16>, &ff, _1);
+  auto ff_func = std::bind(&FloppyFloat::Sqrt<f16, FloppyFloat::kRoundTiesToEven>, &ff, _1);
   auto sf_func = std::bind(&::f16_sqrt, _1);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 1>(ff_func, sf_func);
 }
@@ -304,6 +306,7 @@ TEST(SoftFloatRiscvTests, Fmaf16RoundZero) {
 
 TEST(SoftFloatRiscvTests, Addf32RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
+  ff.rounding_mode = FloppyFloat::kRoundTiesToEven;
   auto ff_func = std::bind(&FloppyFloat::Add<f32>, &ff, _1, _2);
   auto sf_func = std::bind(&::f32_add, _1, _2);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
@@ -339,7 +342,7 @@ TEST(SoftFloatRiscvTests, Addf32RoundMag) {
 
 TEST(SoftFloatRiscvTests, Subf32RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Sub<f32>, &ff, _1, _2);
+  auto ff_func = std::bind(&FloppyFloat::Sub<f32, FloppyFloat::kRoundTiesToEven>, &ff, _1, _2);
   auto sf_func = std::bind(&::f32_sub, _1, _2);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
@@ -374,7 +377,7 @@ TEST(SoftFloatRiscvTests, Subf32RoundMag) {
 
 TEST(SoftFloatRiscvTests, Mulf32RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Mul<f32>, &ff, _1, _2);
+  auto ff_func = std::bind(&FloppyFloat::Mul<f32, FloppyFloat::kRoundTiesToEven>, &ff, _1, _2);
   auto sf_func = std::bind(&::f32_mul, _1, _2);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
@@ -402,7 +405,7 @@ TEST(SoftFloatRiscvTests, Mulf32RoundZero) {
 
 TEST(SoftFloatRiscvTests, Divf32RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Div<f32>, &ff, _1, _2);
+  auto ff_func = std::bind(&FloppyFloat::Div<f32, FloppyFloat::kRoundTiesToEven>, &ff, _1, _2);
   auto sf_func = std::bind(&::f32_div, _1, _2);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
@@ -430,7 +433,7 @@ TEST(SoftFloatRiscvTests, Divf32RoundZero) {
 
 TEST(SoftFloatRiscvTests, Sqrtf32RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Sqrt<f32>, &ff, _1);
+  auto ff_func = std::bind(&FloppyFloat::Sqrt<f32, FloppyFloat::kRoundTiesToEven>, &ff, _1);
   auto sf_func = std::bind(&::f32_sqrt, _1);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 1>(ff_func, sf_func);
 }
@@ -687,6 +690,7 @@ TEST(SoftFloatRiscvTests, Lt32) {
 
 TEST(SoftFloatRiscvTests, Addf64RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
+  ff.rounding_mode = FloppyFloat::kRoundTiesToEven;
   auto ff_func = std::bind(&FloppyFloat::Add<f64>, &ff, _1, _2);
   auto sf_func = std::bind(&::f64_add, _1, _2);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
@@ -722,7 +726,7 @@ TEST(SoftFloatRiscvTests, Addf64RoundMag) {
 
 TEST(SoftFloatRiscvTests, Subf64RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Sub<f64>, &ff, _1, _2);
+  auto ff_func = std::bind(&FloppyFloat::Sub<f64,FloppyFloat::kRoundTiesToEven>, &ff, _1, _2);
   auto sf_func = std::bind(&::f64_sub, _1, _2);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
@@ -757,7 +761,7 @@ TEST(SoftFloatRiscvTests, Subf64RoundMag) {
 
 TEST(SoftFloatRiscvTests, Mulf64RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Mul<f64>, &ff, _1, _2);
+  auto ff_func = std::bind(&FloppyFloat::Mul<f64, FloppyFloat::kRoundTiesToEven>, &ff, _1, _2);
   auto sf_func = std::bind(&::f64_mul, _1, _2);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
@@ -785,7 +789,7 @@ TEST(SoftFloatRiscvTests, Mulf64RoundZero) {
 
 TEST(SoftFloatRiscvTests, Divf64RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Div<f64>, &ff, _1, _2);
+  auto ff_func = std::bind(&FloppyFloat::Div<f64, FloppyFloat::kRoundTiesToEven>, &ff, _1, _2);
   auto sf_func = std::bind(&::f64_div, _1, _2);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
@@ -813,7 +817,7 @@ TEST(SoftFloatRiscvTests, Divf64RoundZero) {
 
 TEST(SoftFloatRiscvTests, Sqrtf64RoundNear) {
   ::softfloat_roundingMode = ::softfloat_round_near_even;
-  auto ff_func = std::bind(&FloppyFloat::Sqrt<f64>, &ff, _1);
+  auto ff_func = std::bind(&FloppyFloat::Sqrt<f64, FloppyFloat::kRoundTiesToEven>, &ff, _1);
   auto sf_func = std::bind(&::f64_sqrt, _1);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 1>(ff_func, sf_func);
 }

@@ -101,6 +101,13 @@ Coding, algorithms, and a bit of math.
 For a detailed explanation see [this blog post](https://www.chciken.com/simulation/2023/11/12/fast-floating-point-simulation.html).
 
 ## Issues
-- `Fma` and `Sqrt` for f16 inherits the incorrect rounding problem of glibc (calculates the result as f32 and then casts to f16).
 - Overflow exception for `Add`, `Sub`, `Mul`, `Div`, `Sqrt`, `Fma` may not trigger in some cases
 - Underflow exception for `Mul`, `Div`, `Sqrt`, `Fma` may not trigger in some cases
+- `Fma` and `Sqrt` for f16 inherits the incorrect rounding problem of glibc (calculates the result as f32 and then casts to f16). Currently, this is fixed by soft float fall back,
+
+For instance,
+fma<f16>(a=-854, b=-28, c=1.6689e-05)
+standard library result: 23904
+correct result: 23920
+a*b = 23912
+a*b+c = 23912.000016689

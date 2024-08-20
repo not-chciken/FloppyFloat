@@ -200,6 +200,20 @@ constexpr int NumExponentBits() {
 }
 
 template <typename FT>
+constexpr i32 MaxExponent() {
+  static_assert(std::is_floating_point<FT>::value);
+  if constexpr (std::is_same<FT, f16>::value) {
+    return 31;
+  } else if constexpr (std::is_same<FT, f32>::value) {
+    return 255;
+  } else if constexpr (std::is_same<FT, f64>::value) {
+    return 2047;
+  } else {
+    static_assert("Type needs to be f16, f32, or f64");
+  }
+}
+
+template <typename FT>
 constexpr int NumRoundBits() {
   static_assert(std::is_floating_point<FT>::value);
   return NumImantBits<FT>() - NumSignificandBits<FT>();
@@ -324,6 +338,12 @@ constexpr bool IsInfOrNan(FT a) {
   return res != res;
 }
 
+// template <typename FT>
+// constexpr bool IsInfOrNan(FT a) {
+//   static_assert(std::is_floating_point<FT>::value);
+//   return GetExponent<FT>(a) == MaxExponent<FT>();
+// }
+
 template <typename FT>
 constexpr bool IsNan(FT a) {
   static_assert(std::is_floating_point<FT>::value);
@@ -402,20 +422,6 @@ constexpr FT NextUpNoNegZero(FT a) {
   auto au = std::bit_cast<typename FloatToInt<FT>::type>(a);
   au += a >= 0. ? 1 : -1;  // Nextup of result cannot be -0.
   return std::bit_cast<FT>(au);
-}
-
-template <typename FT>
-constexpr i32 MaxExponent() {
-  static_assert(std::is_floating_point<FT>::value);
-  if constexpr (std::is_same<FT, f16>::value) {
-    return 31;
-  } else if constexpr (std::is_same<FT, f32>::value) {
-    return 255;
-  } else if constexpr (std::is_same<FT, f64>::value) {
-    return 2047;
-  } else {
-    static_assert("Type needs to be f16, f32, or f64");
-  }
 }
 
 template <typename FT>
