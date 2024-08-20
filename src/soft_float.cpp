@@ -572,6 +572,54 @@ template f16 SoftFloat::Fma<f16>(f16 a, f16 b, f16 c);
 template f32 SoftFloat::Fma<f32>(f32 a, f32 b, f32 c);
 template f64 SoftFloat::Fma<f64>(f64 a, f64 b, f64 c);
 
+f16 SoftFloat::I32ToF16(i32 a) {
+  return IToF<i32, f16>(a);
+}
+
+f32 SoftFloat::I32ToF32(i32 a) {
+  return IToF<i32, f32>(a);
+}
+
+f64 SoftFloat::I32ToF64(i32 a) {
+  return IToF<i32, f64>(a);
+}
+
+f16 SoftFloat::U32ToF16(u32 a) {
+  return IToF<u32, f16>(a);
+}
+
+f32 SoftFloat::U32ToF32(u32 a) {
+  return IToF<u32, f32>(a);
+}
+
+f64 SoftFloat::U32ToF64(u32 a) {
+  return IToF<u32, f64>(a);
+}
+
+f16 SoftFloat::I64ToF16(i64 a) {
+  return IToF<i64, f16>(a);
+}
+
+f32 SoftFloat::I64ToF32(i64 a) {
+  return IToF<i64, f32>(a);
+}
+
+f64 SoftFloat::I64ToF64(i64 a) {
+  return IToF<i64, f64>(a);
+}
+
+f16 SoftFloat::U64ToF16(u64 a) {
+  return IToF<u64, f16>(a);
+}
+
+f32 SoftFloat::U64ToF32(u64 a) {
+  return IToF<u64, f32>(a);
+}
+
+f64 SoftFloat::U64ToF64(u64 a) {
+  return IToF<u64, f64>(a);
+}
+
 template <typename TFROM, typename TTO>
 TTO SoftFloat::FToF(TFROM a) {
   static_assert(std::is_floating_point_v<TFROM>);
@@ -610,6 +658,40 @@ TTO SoftFloat::FToF(TFROM a) {
 template f16 SoftFloat::FToF<f32, f16>(f32 a);
 template f16 SoftFloat::FToF<f64, f16>(f64 a);
 template f32 SoftFloat::FToF<f64, f32>(f64 a);
+
+template <typename TFROM, typename TTO>
+TTO SoftFloat::IToF(TFROM a) {
+  using UTTO = FloatToUint<TTO>::type;
+  typedef typename std::make_unsigned<TFROM>::type UT;
+
+  bool a_sign;
+  i32 a_exp;
+  UT a_mant;
+  UT r, mask;
+  int l;
+
+  if (std::is_signed<TFROM>::value && a < 0) {
+    a_sign = 1;
+    r = -(UT)a;
+  } else {
+    a_sign = 0;
+    r = a;
+  }
+  a_exp = Bias<TTO>() + NumBits<TTO>() - 2;
+
+  l = NumBits<TFROM>() - std::countl_zero(r) - (NumBits<TTO>() - 1);
+  if (l > 0) {
+    mask = r & (((UT)1 << l) - 1);
+    r = (r >> l) | ((r & mask) != 0);
+    a_exp += l;
+  }
+  a_mant = r;
+  return Normalize<TTO>(a_sign, a_exp, static_cast<UTTO>(a_mant));
+}
+
+template f16 SoftFloat::IToF<i32, f16>(i32 a);
+template f32 SoftFloat::IToF<i32, f32>(i32 a);
+template f64 SoftFloat::IToF<i32, f64>(i32 a);
 
 f16 SoftFloat::F32ToF16(f32 a) {
   return FToF<f32, f16>(a);

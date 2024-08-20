@@ -144,13 +144,13 @@ constexpr int Bias() {
 
 template <typename T>
 constexpr int NumBits() {
-  if constexpr (std::is_same_v<T, f16> || std::is_same_v<T, u16>) {
+  if constexpr (std::is_same_v<T, f16> || std::is_same_v<T, u16> || std::is_same_v<T, i16>) {
     return 16;
-  } else if constexpr (std::is_same_v<T, f32> || std::is_same_v<T, u32>) {
+  } else if constexpr (std::is_same_v<T, f32> || std::is_same_v<T, u32> || std::is_same_v<T, i32>) {
     return 32;
-  } else if constexpr (std::is_same_v<T, f64> || std::is_same_v<T, u64>) {
+  } else if constexpr (std::is_same_v<T, f64> || std::is_same_v<T, u64> || std::is_same_v<T, i64>) {
     return 64;
-  }  else if constexpr (std::is_same_v<T, f128> || std::is_same_v<T, u128>) {
+  } else if constexpr (std::is_same_v<T, f128> || std::is_same_v<T, u128> || std::is_same_v<T, i128>) {
     return 128;
   } else {
     static_assert("Unsupported data type");
@@ -447,4 +447,4 @@ constexpr auto SignMask() {
   return u;
 }
 
-};
+};  // namespace FfUtils

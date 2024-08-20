@@ -28,8 +28,9 @@ constexpr FT TwoSum(FT a, FT b, FT c) {
 // 2Sum algorithm which determines the exact residual of an addition.
 template <typename FT>
 constexpr FT FastTwoSum(FT a, FT b, FT c) {
-  FT x = std::fabs(a) > std::fabs(b) ? a : b;
-  FT y = std::fabs(a) > std::fabs(b) ? b : a;
+  const bool no_swap = std::fabs(a) > std::fabs(b);
+  FT x = no_swap ? a : b;
+  FT y = no_swap ? b : a;
   FT r = (c - x) - y;
   return r;
 }
@@ -290,7 +291,7 @@ FT FloppyFloat::Add(FT a, FT b) {
   case kRoundTowardNegative:
     return Add<FT, kRoundTowardNegative>(a, b);
   case kRoundTowardZero:
-    return Add<FT,kRoundTowardZero>(a, b);
+    return Add<FT, kRoundTowardZero>(a, b);
   default:
     throw std::runtime_error(std::string("Unknown rounding mode"));
   }
@@ -301,7 +302,7 @@ template f32 FloppyFloat::Add<f32>(f32 a, f32 b);
 template f64 FloppyFloat::Add<f64>(f64 a, f64 b);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
-FT FloppyFloat::Add(FT a, FT b) {
+constexpr FT FloppyFloat::Add(FT a, FT b) {
   FT c = a + b;
 
   if (IsInfOrNan(c)) [[unlikely]] {
@@ -381,8 +382,30 @@ template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTowardNegative>(f64 a, f64
 template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTowardZero>(f64 a, f64 b);
 template f64 FloppyFloat::Add<f64, FloppyFloat::kRoundTiesToAway>(f64 a, f64 b);
 
-template <typename FT, FloppyFloat::RoundingMode rm>
+template <typename FT>
 FT FloppyFloat::Sub(FT a, FT b) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return Sub<FT, kRoundTiesToEven>(a, b);
+  case kRoundTiesToAway:
+    return Sub<FT, kRoundTiesToAway>(a, b);
+  case kRoundTowardPositive:
+    return Sub<FT, kRoundTowardPositive>(a, b);
+  case kRoundTowardNegative:
+    return Sub<FT, kRoundTowardNegative>(a, b);
+  case kRoundTowardZero:
+    return Sub<FT, kRoundTowardZero>(a, b);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template f16 FloppyFloat::Sub<f16>(f16 a, f16 b);
+template f32 FloppyFloat::Sub<f32>(f32 a, f32 b);
+template f64 FloppyFloat::Sub<f64>(f64 a, f64 b);
+
+template <typename FT, FloppyFloat::RoundingMode rm>
+constexpr FT FloppyFloat::Sub(FT a, FT b) {
   FT c = a - b;
 
   if (IsInfOrNan(c)) [[unlikely]] {
@@ -462,8 +485,38 @@ template f64 FloppyFloat::Sub<f64, FloppyFloat::kRoundTowardNegative>(f64 a, f64
 template f64 FloppyFloat::Sub<f64, FloppyFloat::kRoundTowardZero>(f64 a, f64 b);
 template f64 FloppyFloat::Sub<f64, FloppyFloat::kRoundTiesToAway>(f64 a, f64 b);
 
-template <typename FT, FloppyFloat::RoundingMode rm>
+template <typename FT>
 FT FloppyFloat::Mul(FT a, FT b) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return Mul<FT, kRoundTiesToEven>(a, b);
+  case kRoundTiesToAway:
+    return Mul<FT, kRoundTiesToAway>(a, b);
+  case kRoundTowardPositive:
+    return Mul<FT, kRoundTowardPositive>(a, b);
+  case kRoundTowardNegative:
+    return Mul<FT, kRoundTowardNegative>(a, b);
+  case kRoundTowardZero:
+    return Mul<FT, kRoundTowardZero>(a, b);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template f16 FloppyFloat::Mul<f16>(f16 a, f16 b);
+template f32 FloppyFloat::Mul<f32>(f32 a, f32 b);
+template f64 FloppyFloat::Mul<f64>(f64 a, f64 b);
+
+template <typename FT, FloppyFloat::RoundingMode rm>
+constexpr FT FloppyFloat::Mul(FT a, FT b) {
+  if constexpr (rm == kRoundTiesToAway) {
+    RoundingMode old_rm = rounding_mode;
+    rounding_mode = rm;
+    FT c = SoftFloat::Mul(a, b);
+    rounding_mode = old_rm;
+    return c;
+  }
+
   FT c = a * b;
 
   if (IsInfOrNan(c)) [[unlikely]] {
@@ -515,19 +568,52 @@ template f16 FloppyFloat::Mul<f16, FloppyFloat::kRoundTiesToEven>(f16 a, f16 b);
 template f16 FloppyFloat::Mul<f16, FloppyFloat::kRoundTowardPositive>(f16 a, f16 b);
 template f16 FloppyFloat::Mul<f16, FloppyFloat::kRoundTowardNegative>(f16 a, f16 b);
 template f16 FloppyFloat::Mul<f16, FloppyFloat::kRoundTowardZero>(f16 a, f16 b);
+template f16 FloppyFloat::Mul<f16, FloppyFloat::kRoundTiesToAway>(f16 a, f16 b);
 
 template f32 FloppyFloat::Mul<f32, FloppyFloat::kRoundTiesToEven>(f32 a, f32 b);
 template f32 FloppyFloat::Mul<f32, FloppyFloat::kRoundTowardPositive>(f32 a, f32 b);
 template f32 FloppyFloat::Mul<f32, FloppyFloat::kRoundTowardNegative>(f32 a, f32 b);
 template f32 FloppyFloat::Mul<f32, FloppyFloat::kRoundTowardZero>(f32 a, f32 b);
+template f32 FloppyFloat::Mul<f32, FloppyFloat::kRoundTiesToAway>(f32 a, f32 b);
 
 template f64 FloppyFloat::Mul<f64, FloppyFloat::kRoundTiesToEven>(f64 a, f64 b);
 template f64 FloppyFloat::Mul<f64, FloppyFloat::kRoundTowardPositive>(f64 a, f64 b);
 template f64 FloppyFloat::Mul<f64, FloppyFloat::kRoundTowardNegative>(f64 a, f64 b);
 template f64 FloppyFloat::Mul<f64, FloppyFloat::kRoundTowardZero>(f64 a, f64 b);
+template f64 FloppyFloat::Mul<f64, FloppyFloat::kRoundTiesToAway>(f64 a, f64 b);
+
+template <typename FT>
+FT FloppyFloat::Div(FT a, FT b) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return Div<FT, kRoundTiesToEven>(a, b);
+  case kRoundTiesToAway:
+    return Div<FT, kRoundTiesToAway>(a, b);
+  case kRoundTowardPositive:
+    return Div<FT, kRoundTowardPositive>(a, b);
+  case kRoundTowardNegative:
+    return Div<FT, kRoundTowardNegative>(a, b);
+  case kRoundTowardZero:
+    return Div<FT, kRoundTowardZero>(a, b);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template f16 FloppyFloat::Div<f16>(f16 a, f16 b);
+template f32 FloppyFloat::Div<f32>(f32 a, f32 b);
+template f64 FloppyFloat::Div<f64>(f64 a, f64 b);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
-FT FloppyFloat::Div(FT a, FT b) {
+constexpr FT FloppyFloat::Div(FT a, FT b) {
+  if constexpr (rm == kRoundTiesToAway) {
+    RoundingMode old_rm = rounding_mode;
+    rounding_mode = rm;
+    FT d = SoftFloat::Div(a, b);
+    rounding_mode = old_rm;
+    return d;
+  }
+
   FT c = a / b;
 
   if (IsInfOrNan(c)) [[unlikely]] {
@@ -597,8 +683,38 @@ template f64 FloppyFloat::Div<f64, FloppyFloat::kRoundTowardPositive>(f64 a, f64
 template f64 FloppyFloat::Div<f64, FloppyFloat::kRoundTowardNegative>(f64 a, f64 b);
 template f64 FloppyFloat::Div<f64, FloppyFloat::kRoundTowardZero>(f64 a, f64 b);
 
-template <typename FT, FloppyFloat::RoundingMode rm>
+template <typename FT>
 FT FloppyFloat::Sqrt(FT a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return Sqrt<FT, kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return Sqrt<FT, kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return Sqrt<FT, kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return Sqrt<FT, kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return Sqrt<FT, kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template f16 FloppyFloat::Sqrt<f16>(f16 a);
+template f32 FloppyFloat::Sqrt<f32>(f32 a);
+template f64 FloppyFloat::Sqrt<f64>(f64 a);
+
+template <typename FT, FloppyFloat::RoundingMode rm>
+constexpr FT FloppyFloat::Sqrt(FT a) {
+  if constexpr (rm == kRoundTiesToAway) {
+    RoundingMode old_rm = rounding_mode;
+    rounding_mode = rm;
+    FT b = SoftFloat::Sqrt(a);
+    rounding_mode = old_rm;
+    return b;
+  }
+
   FT b = std::sqrt(a);
 
   if (IsNan(b)) [[unlikely]] {
@@ -646,9 +762,31 @@ template f64 FloppyFloat::Sqrt<f64, FloppyFloat::kRoundTowardPositive>(f64 a);
 template f64 FloppyFloat::Sqrt<f64, FloppyFloat::kRoundTowardNegative>(f64 a);
 template f64 FloppyFloat::Sqrt<f64, FloppyFloat::kRoundTowardZero>(f64 a);
 
-template <typename FT, FloppyFloat::RoundingMode rm>
+template <typename FT>
 FT FloppyFloat::Fma(FT a, FT b, FT c) {
-  if constexpr (std::is_same_v<FT, f16>) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return Fma<FT, kRoundTiesToEven>(a, b, c);
+  case kRoundTiesToAway:
+    return Fma<FT, kRoundTiesToAway>(a, b, c);
+  case kRoundTowardPositive:
+    return Fma<FT, kRoundTowardPositive>(a, b, c);
+  case kRoundTowardNegative:
+    return Fma<FT, kRoundTowardNegative>(a, b, c);
+  case kRoundTowardZero:
+    return Fma<FT, kRoundTowardZero>(a, b, c);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template f16 FloppyFloat::Fma<f16>(f16 a, f16 b, f16 c);
+template f32 FloppyFloat::Fma<f32>(f32 a, f32 b, f32 c);
+template f64 FloppyFloat::Fma<f64>(f64 a, f64 b, f64 c);
+
+template <typename FT, FloppyFloat::RoundingMode rm>
+constexpr FT FloppyFloat::Fma(FT a, FT b, FT c) {
+  if constexpr (std::is_same_v<FT, f16> || (rm == kRoundTiesToAway)) {
     // TODO: Remove once the f16 FMA issue of the standard library is solved.
     RoundingMode old_rm = rounding_mode;
     rounding_mode = rm;
@@ -885,15 +1023,32 @@ constexpr IT RoundIntegerResult(FT residual, FT source, IT result) {
   return result;
 }
 
-template <FloppyFloat::RoundingMode rm>
 i32 FloppyFloat::F32ToI32(f32 a) {
-  if (IsNan(a)) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F32ToI32<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F32ToI32<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F32ToI32<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F32ToI32<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F32ToI32<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template <FloppyFloat::RoundingMode rm>
+constexpr inline i32 FloppyFloat::F32ToI32(f32 a) {
+  if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_i32_;
-  } else if (a >= 2147483648.f) [[unlikely]] {
+  } else if (a >= 2147483648.f32) [[unlikely]] {
     invalid = true;
     return max_limit_i32_;
-  } else if (a < -2147483648.f) [[unlikely]] {
+  } else if (a < -2147483648.f32) [[unlikely]] {
     invalid = true;
     return min_limit_i32_;
   }
@@ -912,10 +1067,10 @@ i32 FloppyFloat::F32ToI32(f32 a) {
     inexact = true;
 
   if constexpr (rm == kRoundTowardNegative) {
-    if (r > 0)
+    if (r > 0.f32)
       ia -= 1;
   } else if constexpr (rm == kRoundTowardPositive) {
-    if (r < 0)
+    if (r < 0.f32)
       ia += 1;
   }
 
@@ -923,13 +1078,30 @@ i32 FloppyFloat::F32ToI32(f32 a) {
 }
 
 template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTiesToEven>(f32 a);
-template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardPositive>(f32 a);
-template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardNegative>(f32 a);
-template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardZero>(f32 a);
 template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTiesToAway>(f32 a);
+template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardNegative>(f32 a);
+template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardPositive>(f32 a);
+template i32 FloppyFloat::F32ToI32<FloppyFloat::kRoundTowardZero>(f32 a);
+
+i64 FloppyFloat::F32ToI64(f32 a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F32ToI64<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F32ToI64<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F32ToI64<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F32ToI64<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F32ToI64<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
 
 template <FloppyFloat::RoundingMode rm>
-i64 FloppyFloat::F32ToI64(f32 a) {
+constexpr i64 FloppyFloat::F32ToI64(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_i64_;
@@ -955,10 +1127,10 @@ i64 FloppyFloat::F32ToI64(f32 a) {
     inexact = true;
 
   if constexpr (rm == kRoundTowardNegative) {
-    if (r > 0)
+    if (r > 0.f32)
       ia -= 1;
   } else if constexpr (rm == kRoundTowardPositive) {
-    if (r < 0)
+    if (r < 0.f32)
       ia += 1;
   }
 
@@ -986,15 +1158,32 @@ bool ResultOutOfURange(FT a) {
   }
 }
 
-template <FloppyFloat::RoundingMode rm>
 u32 FloppyFloat::F32ToU32(f32 a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F32ToU32<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F32ToU32<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F32ToU32<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F32ToU32<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F32ToU32<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template <FloppyFloat::RoundingMode rm>
+constexpr u32 FloppyFloat::F32ToU32(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_u32_;
-  } else if (a >= 4294967296.f) [[unlikely]] {
+  } else if (a >= 4294967296.f32) [[unlikely]] {
     invalid = true;
     return max_limit_u32_;
-  } else if (a < 0.f) [[unlikely]] {
+  } else if (a < 0.f32) [[unlikely]] {
     if (ResultOutOfURange<f32, rm>(a)) {
       invalid = true;
       return min_limit_u32_;
@@ -1017,10 +1206,10 @@ u32 FloppyFloat::F32ToU32(f32 a) {
     inexact = true;
 
   if constexpr (rm == kRoundTowardNegative) {
-    if (r > 0)
+    if (r > 0.f32)
       ia -= 1;
   } else if constexpr (rm == kRoundTowardPositive) {
-    if (r < 0)
+    if (r < 0.f32)
       ia += 1;
   }
 
@@ -1033,12 +1222,29 @@ template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTowardNegative>(f32 a);
 template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTowardZero>(f32 a);
 template u32 FloppyFloat::F32ToU32<FloppyFloat::kRoundTiesToAway>(f32 a);
 
-template <FloppyFloat::RoundingMode rm>
 u64 FloppyFloat::F32ToU64(f32 a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F32ToU64<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F32ToU64<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F32ToU64<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F32ToU64<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F32ToU64<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template <FloppyFloat::RoundingMode rm>
+constexpr u64 FloppyFloat::F32ToU64(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_u64_;
-  } else if (a >= 18446744073709551616.0f64) [[unlikely]] {
+  } else if (a >= 18446744073709551616.0f32) [[unlikely]] {
     invalid = true;
     return max_limit_u64_;
   } else if (a < 0.f) [[unlikely]] {
@@ -1075,8 +1281,25 @@ f64 FloppyFloat::F32ToF64(f32 a) {
   return static_cast<f64>(a);
 }
 
-template <FloppyFloat::RoundingMode rm>
 f16 FloppyFloat::F32ToF16(f32 a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F32ToF16<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F32ToF16<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F32ToF16<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F32ToF16<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F32ToF16<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template <FloppyFloat::RoundingMode rm>
+constexpr f16 FloppyFloat::F32ToF16(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     if (!GetQuietBit(a))
       invalid = true;
@@ -1113,7 +1336,7 @@ f16 FloppyFloat::F32ToF16(f32 a) {
         if (std::signbit(residual) == std::signbit(result))
           underflow = true;
       } else {
-        if (residual != 0.)
+        if (residual != 0.f32)
           underflow = true;
       }
     }
@@ -1158,8 +1381,25 @@ constexpr f64 F64ToI32PosLimit() {
   }
 }
 
-template <FloppyFloat::RoundingMode rm>
 i32 FloppyFloat::F64ToI32(f64 a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F64ToI32<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F64ToI32<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F64ToI32<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F64ToI32<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F64ToI32<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template <FloppyFloat::RoundingMode rm>
+constexpr i32 FloppyFloat::F64ToI32(f64 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_i32_;
@@ -1201,8 +1441,25 @@ template i32 FloppyFloat::F64ToI32<FloppyFloat::kRoundTowardNegative>(f64 a);
 template i32 FloppyFloat::F64ToI32<FloppyFloat::kRoundTowardZero>(f64 a);
 template i32 FloppyFloat::F64ToI32<FloppyFloat::kRoundTiesToAway>(f64 a);
 
-template <FloppyFloat::RoundingMode rm>
 i64 FloppyFloat::F64ToI64(f64 a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F64ToI64<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F64ToI64<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F64ToI64<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F64ToI64<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F64ToI64<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template <FloppyFloat::RoundingMode rm>
+constexpr i64 FloppyFloat::F64ToI64(f64 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_i64_;
@@ -1274,8 +1531,25 @@ constexpr f64 F64ToU32PosLimit() {
   }
 }
 
-template <FloppyFloat::RoundingMode rm>
 u32 FloppyFloat::F64ToU32(f64 a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F64ToU32<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F64ToU32<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F64ToU32<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F64ToU32<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F64ToU32<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template <FloppyFloat::RoundingMode rm>
+constexpr u32 FloppyFloat::F64ToU32(f64 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_u32_;
@@ -1325,8 +1599,25 @@ constexpr f64 F64ToU64PosLimit() {
   }
 }
 
-template <FloppyFloat::RoundingMode rm>
 u64 FloppyFloat::F64ToU64(f64 a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F64ToU64<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F64ToU64<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F64ToU64<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F64ToU64<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F64ToU64<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
+template <FloppyFloat::RoundingMode rm>
+constexpr u64 FloppyFloat::F64ToU64(f64 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_u64_;
@@ -1376,7 +1667,7 @@ f16 FloppyFloat::I32ToF16(i32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-f16 FloppyFloat::I32ToF16(i32 a) {
+constexpr f16 FloppyFloat::I32ToF16(i32 a) {
   f16 af = static_cast<f16>(a);
   u32 ua = std::abs(a);
   u32 shifted_ua = ua << std::countl_zero(ua);
@@ -1447,7 +1738,7 @@ f32 FloppyFloat::I32ToF32(i32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-f32 FloppyFloat::I32ToF32(i32 a) {
+constexpr f32 FloppyFloat::I32ToF32(i32 a) {
   f32 af = static_cast<f32>(a);
   u32 ua = std::abs(a);
   u32 shifted_ua = ua << std::countl_zero(ua);
@@ -1522,7 +1813,7 @@ f32 FloppyFloat::U32ToF32(u32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-f32 FloppyFloat::U32ToF32(u32 a) {
+constexpr f32 FloppyFloat::U32ToF32(u32 a) {
   f32 af = static_cast<f32>(a);
   u32 shifted_ua = a << std::countl_zero(a);
   u32 r = shifted_ua & 0xffu;
@@ -1575,7 +1866,7 @@ f32 FloppyFloat::U64ToF32(u64 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-f32 FloppyFloat::U64ToF32(u64 a) {
+constexpr f32 FloppyFloat::U64ToF32(u64 a) {
   f32 af = static_cast<f32>(a);
   u64 shifted_ua = a << std::countl_zero(a);
   u64 r = shifted_ua & 0x7ffull;
