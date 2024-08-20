@@ -132,130 +132,260 @@ void DoTest(FFFUNC ff_func, SFFUNC sf_func) {
   }
 }
 
-TEST(SoftFloatRiscvTests, Addf16) {
+TEST(SoftFloatSoftFloatTests, Addf16) {
   auto ff_func = std::bind(&SoftFloat::Add<f16>, &sf, _1, _2);
   auto sf_func = std::bind(&::f16_add, _1, _2);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Addf32) {
+TEST(SoftFloatSoftFloatTests, Addf32) {
   auto ff_func = std::bind(&SoftFloat::Add<f32>, &sf, _1, _2);
   auto sf_func = std::bind(&::f32_add, _1, _2);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Addf64) {
+TEST(SoftFloatSoftFloatTests, Addf64) {
   auto ff_func = std::bind(&SoftFloat::Add<f64>, &sf, _1, _2);
   auto sf_func = std::bind(&::f64_add, _1, _2);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Subf16) {
+TEST(SoftFloatSoftFloatTests, Subf16) {
   auto ff_func = std::bind(&SoftFloat::Sub<f16>, &sf, _1, _2);
   auto sf_func = std::bind(&::f16_sub, _1, _2);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Subf32) {
+TEST(SoftFloatSoftFloatTests, Subf32) {
   auto ff_func = std::bind(&SoftFloat::Sub<f32>, &sf, _1, _2);
   auto sf_func = std::bind(&::f32_sub, _1, _2);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Subf64) {
+TEST(SoftFloatSoftFloatTests, Subf64) {
   auto ff_func = std::bind(&SoftFloat::Sub<f64>, &sf, _1, _2);
   auto sf_func = std::bind(&::f64_sub, _1, _2);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Mulf16) {
+TEST(SoftFloatSoftFloatTests, Mulf16) {
   auto ff_func = std::bind(&SoftFloat::Mul<f16>, &sf, _1, _2);
   auto sf_func = std::bind(&::f16_mul, _1, _2);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Mulf32) {
+TEST(SoftFloatSoftFloatTests, Mulf32) {
   auto ff_func = std::bind(&SoftFloat::Mul<f32>, &sf, _1, _2);
   auto sf_func = std::bind(&::f32_mul, _1, _2);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Mulf64) {
+TEST(SoftFloatSoftFloatTests, Mulf64) {
   auto ff_func = std::bind(&SoftFloat::Mul<f64>, &sf, _1, _2);
   auto sf_func = std::bind(&::f64_mul, _1, _2);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Divf16) {
+TEST(SoftFloatSoftFloatTests, Divf16) {
   auto ff_func = std::bind(&SoftFloat::Div<f16>, &sf, _1, _2);
   auto sf_func = std::bind(&::f16_div, _1, _2);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Divf32) {
+TEST(SoftFloatSoftFloatTests, Divf32) {
   auto ff_func = std::bind(&SoftFloat::Div<f32>, &sf, _1, _2);
   auto sf_func = std::bind(&::f32_div, _1, _2);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Divf64) {
+TEST(SoftFloatSoftFloatTests, Divf64) {
   auto ff_func = std::bind(&SoftFloat::Div<f64>, &sf, _1, _2);
   auto sf_func = std::bind(&::f64_div, _1, _2);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 2>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Sqrtf16) {
+TEST(SoftFloatSoftFloatTests, Sqrtf16) {
   auto ff_func = std::bind(&SoftFloat::Sqrt<f16>, &sf, _1);
   auto sf_func = std::bind(&::f16_sqrt, _1);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 1>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Sqrtf32) {
+TEST(SoftFloatSoftFloatTests, Sqrtf32) {
   auto ff_func = std::bind(&SoftFloat::Sqrt<f32>, &sf, _1);
   auto sf_func = std::bind(&::f32_sqrt, _1);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 1>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Sqrtf64) {
+TEST(SoftFloatSoftFloatTests, Sqrtf64) {
   auto ff_func = std::bind(&SoftFloat::Sqrt<f64>, &sf, _1);
   auto sf_func = std::bind(&::f64_sqrt, _1);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 1>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Fmaf16) {
+TEST(SoftFloatSoftFloatTests, Fmaf16) {
   auto ff_func = std::bind(&SoftFloat::Fma<f16>, &sf, _1, _2, _3);
   auto sf_func = std::bind(&::f16_mulAdd, _1, _2, _3);
   DoTest<f16, decltype(ff_func), decltype(sf_func), 3>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Fmaf32) {
+TEST(SoftFloatSoftFloatTests, Fmaf32) {
   auto ff_func = std::bind(&SoftFloat::Fma<f32>, &sf, _1, _2, _3);
   auto sf_func = std::bind(&::f32_mulAdd, _1, _2, _3);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 3>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, Fmaf64) {
+TEST(SoftFloatSoftFloatTests, Fmaf64) {
   auto ff_func = std::bind(&SoftFloat::Fma<f64>, &sf, _1, _2, _3);
   auto sf_func = std::bind(&::f64_mulAdd, _1, _2, _3);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 3>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, F32ToF16) {
+TEST(SoftFloatSoftFloatTests, F32ToF16) {
   auto ff_func = std::bind(&SoftFloat::F32ToF16, &sf, _1);
   auto sf_func = std::bind(&::f32_to_f16, _1);
   DoTest<f32, decltype(ff_func), decltype(sf_func), 1>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, F64Tof16) {
+TEST(SoftFloatSoftFloatTests, F64Tof16) {
   auto ff_func = std::bind(&SoftFloat::F64ToF16, &sf, _1);
   auto sf_func = std::bind(&::f64_to_f16, _1);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 1>(ff_func, sf_func);
 }
 
-TEST(SoftFloatRiscvTests, F64ToF32) {
+TEST(SoftFloatSoftFloatTests, F64ToF32) {
   auto ff_func = std::bind(&SoftFloat::F64ToF32, &sf, _1);
   auto sf_func = std::bind(&::f64_to_f32, _1);
   DoTest<f64, decltype(ff_func), decltype(sf_func), 1>(ff_func, sf_func);
+}
+
+TEST(SoftFloatSoftFloatTests, I32ToF16) {
+  ::softfloat_exceptionFlags = 0;
+  sf.ClearFlags();
+  for (auto rm : rounding_modes) {
+    ::softfloat_roundingMode = rm.first;
+    sf.rounding_mode = rm.second;
+    CheckResult(ToComparableType(sf.I32ToF16(0)), ToComparableType(::i32_to_f16(0)), 0);
+    CheckResult(ToComparableType(sf.I32ToF16(1)), ToComparableType(::i32_to_f16(1)), 1);
+    CheckResult(ToComparableType(sf.I32ToF16(-1)), ToComparableType(::i32_to_f16(-1)), 2);
+    CheckResult(ToComparableType(sf.I32ToF16(5)), ToComparableType(::i32_to_f16(5)), 3);
+    CheckResult(ToComparableType(sf.I32ToF16(-5)), ToComparableType(::i32_to_f16(-5)), 4);
+    CheckResult(ToComparableType(sf.I32ToF16(1024)), ToComparableType(::i32_to_f16(1024)), 5);
+    CheckResult(ToComparableType(sf.I32ToF16(-1024)), ToComparableType(::i32_to_f16(-1024)), 6);
+    CheckResult(ToComparableType(sf.I32ToF16(33554432)), ToComparableType(::i32_to_f16(33554432)), 7);
+    CheckResult(ToComparableType(sf.I32ToF16(33554433)), ToComparableType(::i32_to_f16(33554433)), 8);
+    CheckResult(ToComparableType(sf.I32ToF16(33554434)), ToComparableType(::i32_to_f16(33554434)), 9);
+    CheckResult(ToComparableType(sf.I32ToF16(33554435)), ToComparableType(::i32_to_f16(33554435)), 10);
+    CheckResult(ToComparableType(sf.I32ToF16(33554436)), ToComparableType(::i32_to_f16(33554436)), 11);
+    CheckResult(ToComparableType(sf.I32ToF16(2147483646)), ToComparableType(::i32_to_f16(2147483646)), 12);
+    CheckResult(ToComparableType(sf.I32ToF16(-2147483646)), ToComparableType(::i32_to_f16(-2147483646)), 13);
+    CheckResult(ToComparableType(sf.I32ToF16(2147483647)), ToComparableType(::i32_to_f16(2147483647)), 14);
+    CheckResult(ToComparableType(sf.I32ToF16(-2147483647)), ToComparableType(::i32_to_f16(-2147483647)), 15);
+  }
+}
+
+TEST(SoftFloatSoftFloatTests, I32ToF32) {
+  ::softfloat_exceptionFlags = 0;
+  sf.ClearFlags();
+  for (auto rm : rounding_modes) {
+    ::softfloat_roundingMode = rm.first;
+    sf.rounding_mode = rm.second;
+    CheckResult(ToComparableType(sf.I32ToF32(0)), ToComparableType(::i32_to_f32(0)), 0);
+    CheckResult(ToComparableType(sf.I32ToF32(1)), ToComparableType(::i32_to_f32(1)), 1);
+    CheckResult(ToComparableType(sf.I32ToF32(-1)), ToComparableType(::i32_to_f32(-1)), 2);
+    CheckResult(ToComparableType(sf.I32ToF32(5)), ToComparableType(::i32_to_f32(5)), 3);
+    CheckResult(ToComparableType(sf.I32ToF32(-5)), ToComparableType(::i32_to_f32(-5)), 4);
+    CheckResult(ToComparableType(sf.I32ToF32(1024)), ToComparableType(::i32_to_f32(1024)), 5);
+    CheckResult(ToComparableType(sf.I32ToF32(-1024)), ToComparableType(::i32_to_f32(-1024)), 6);
+    CheckResult(ToComparableType(sf.I32ToF32(33554432)), ToComparableType(::i32_to_f32(33554432)), 7);
+    CheckResult(ToComparableType(sf.I32ToF32(33554433)), ToComparableType(::i32_to_f32(33554433)), 8);
+    CheckResult(ToComparableType(sf.I32ToF32(33554434)), ToComparableType(::i32_to_f32(33554434)), 9);
+    CheckResult(ToComparableType(sf.I32ToF32(33554435)), ToComparableType(::i32_to_f32(33554435)), 10);
+    CheckResult(ToComparableType(sf.I32ToF32(33554436)), ToComparableType(::i32_to_f32(33554436)), 11);
+    CheckResult(ToComparableType(sf.I32ToF32(2147483646)), ToComparableType(::i32_to_f32(2147483646)), 12);
+    CheckResult(ToComparableType(sf.I32ToF32(-2147483646)), ToComparableType(::i32_to_f32(-2147483646)), 13);
+    CheckResult(ToComparableType(sf.I32ToF32(2147483647)), ToComparableType(::i32_to_f32(2147483647)), 14);
+    CheckResult(ToComparableType(sf.I32ToF32(-2147483647)), ToComparableType(::i32_to_f32(-2147483647)), 15);
+  }
+}
+
+
+TEST(SoftFloatSoftFloatTests, I32ToF64) {
+  ::softfloat_exceptionFlags = 0;
+  sf.ClearFlags();
+  CheckResult(ToComparableType(sf.I32ToF64(0)), ToComparableType(::i32_to_f64(0)), 0);
+  CheckResult(ToComparableType(sf.I32ToF64(5)), ToComparableType(::i32_to_f64(5)), 1);
+  CheckResult(ToComparableType(sf.I32ToF64(-5)), ToComparableType(::i32_to_f64(-5)), 2);
+  CheckResult(ToComparableType(sf.I32ToF64(1024)), ToComparableType(::i32_to_f64(1024)), 3);
+  CheckResult(ToComparableType(sf.I32ToF64(-1024)), ToComparableType(::i32_to_f64(-1024)), 4);
+  CheckResult(ToComparableType(sf.I32ToF64(2147483646)), ToComparableType(::i32_to_f64(2147483646)), 5);
+  CheckResult(ToComparableType(sf.I32ToF64(-2147483646)), ToComparableType(::i32_to_f64(-2147483646)), 6);
+  CheckResult(ToComparableType(sf.I32ToF64(2147483647)), ToComparableType(::i32_to_f64(2147483647)), 7);
+  CheckResult(ToComparableType(sf.I32ToF64(-2147483647)), ToComparableType(::i32_to_f64(-2147483647)), 8);
+}
+
+TEST(SoftFloatSoftFloatTests, U32ToF16) {
+  ::softfloat_exceptionFlags = 0;
+  sf.ClearFlags();
+  for (auto rm : rounding_modes) {
+    ::softfloat_roundingMode = rm.first;
+    sf.rounding_mode = rm.second;
+    CheckResult(ToComparableType(sf.U32ToF16(0)), ToComparableType(::ui32_to_f16(0)), 0);
+    CheckResult(ToComparableType(sf.U32ToF16(1)), ToComparableType(::ui32_to_f16(1)), 1);
+    CheckResult(ToComparableType(sf.U32ToF16(-1)), ToComparableType(::ui32_to_f16(-1)), 2);
+    CheckResult(ToComparableType(sf.U32ToF16(5)), ToComparableType(::ui32_to_f16(5)), 3);
+    CheckResult(ToComparableType(sf.U32ToF16(-5)), ToComparableType(::ui32_to_f16(-5)), 4);
+    CheckResult(ToComparableType(sf.U32ToF16(1024)), ToComparableType(::ui32_to_f16(1024)), 5);
+    CheckResult(ToComparableType(sf.U32ToF16(-1024)), ToComparableType(::ui32_to_f16(-1024)), 6);
+    CheckResult(ToComparableType(sf.U32ToF16(33554432)), ToComparableType(::ui32_to_f16(33554432)), 7);
+    CheckResult(ToComparableType(sf.U32ToF16(33554433)), ToComparableType(::ui32_to_f16(33554433)), 8);
+    CheckResult(ToComparableType(sf.U32ToF16(33554434)), ToComparableType(::ui32_to_f16(33554434)), 9);
+    CheckResult(ToComparableType(sf.U32ToF16(33554435)), ToComparableType(::ui32_to_f16(33554435)), 10);
+    CheckResult(ToComparableType(sf.U32ToF16(33554436)), ToComparableType(::ui32_to_f16(33554436)), 11);
+    CheckResult(ToComparableType(sf.U32ToF16(2147483646)), ToComparableType(::ui32_to_f16(2147483646)), 12);
+    CheckResult(ToComparableType(sf.U32ToF16(-2147483646)), ToComparableType(::ui32_to_f16(-2147483646)), 13);
+    CheckResult(ToComparableType(sf.U32ToF16(2147483647)), ToComparableType(::ui32_to_f16(2147483647)), 14);
+    CheckResult(ToComparableType(sf.U32ToF16(-2147483647)), ToComparableType(::ui32_to_f16(-2147483647)), 15);
+  }
+}
+
+TEST(SoftFloatSoftFloatTests, U32ToF32) {
+  ::softfloat_exceptionFlags = 0;
+  sf.ClearFlags();
+  for (auto rm : rounding_modes) {
+    ::softfloat_roundingMode = rm.first;
+    sf.rounding_mode = rm.second;
+    CheckResult(ToComparableType(sf.U32ToF32(0)), ToComparableType(::ui32_to_f32(0)), 0);
+    CheckResult(ToComparableType(sf.U32ToF32(1)), ToComparableType(::ui32_to_f32(1)), 1);
+    CheckResult(ToComparableType(sf.U32ToF32(-1)), ToComparableType(::ui32_to_f32(-1)), 2);
+    CheckResult(ToComparableType(sf.U32ToF32(5)), ToComparableType(::ui32_to_f32(5)), 3);
+    CheckResult(ToComparableType(sf.U32ToF32(-5)), ToComparableType(::ui32_to_f32(-5)), 4);
+    CheckResult(ToComparableType(sf.U32ToF32(1024)), ToComparableType(::ui32_to_f32(1024)), 5);
+    CheckResult(ToComparableType(sf.U32ToF32(-1024)), ToComparableType(::ui32_to_f32(-1024)), 6);
+    CheckResult(ToComparableType(sf.U32ToF32(33554432)), ToComparableType(::ui32_to_f32(33554432)), 7);
+    CheckResult(ToComparableType(sf.U32ToF32(33554433)), ToComparableType(::ui32_to_f32(33554433)), 8);
+    CheckResult(ToComparableType(sf.U32ToF32(33554434)), ToComparableType(::ui32_to_f32(33554434)), 9);
+    CheckResult(ToComparableType(sf.U32ToF32(33554435)), ToComparableType(::ui32_to_f32(33554435)), 10);
+    CheckResult(ToComparableType(sf.U32ToF32(33554436)), ToComparableType(::ui32_to_f32(33554436)), 11);
+    CheckResult(ToComparableType(sf.U32ToF32(2147483646)), ToComparableType(::ui32_to_f32(2147483646)), 12);
+    CheckResult(ToComparableType(sf.U32ToF32(-2147483646)), ToComparableType(::ui32_to_f32(-2147483646)), 13);
+    CheckResult(ToComparableType(sf.U32ToF32(2147483647)), ToComparableType(::ui32_to_f32(2147483647)), 14);
+    CheckResult(ToComparableType(sf.U32ToF32(-2147483647)), ToComparableType(::ui32_to_f32(-2147483647)), 15);
+  }
+}
+
+
+TEST(SoftFloatSoftFloatTests, U32ToF64) {
+  ::softfloat_exceptionFlags = 0;
+  sf.ClearFlags();
+  CheckResult(ToComparableType(sf.U32ToF64(0)), ToComparableType(::ui32_to_f64(0)), 0);
+  CheckResult(ToComparableType(sf.U32ToF64(5)), ToComparableType(::ui32_to_f64(5)), 1);
+  CheckResult(ToComparableType(sf.U32ToF64(-5)), ToComparableType(::ui32_to_f64(-5)), 2);
+  CheckResult(ToComparableType(sf.U32ToF64(1024)), ToComparableType(::ui32_to_f64(1024)), 3);
+  CheckResult(ToComparableType(sf.U32ToF64(-1024)), ToComparableType(::ui32_to_f64(-1024)), 4);
+  CheckResult(ToComparableType(sf.U32ToF64(2147483646)), ToComparableType(::ui32_to_f64(2147483646)), 5);
+  CheckResult(ToComparableType(sf.U32ToF64(-2147483646)), ToComparableType(::ui32_to_f64(-2147483646)), 6);
+  CheckResult(ToComparableType(sf.U32ToF64(2147483647)), ToComparableType(::ui32_to_f64(2147483647)), 7);
+  CheckResult(ToComparableType(sf.U32ToF64(-2147483647)), ToComparableType(::ui32_to_f64(-2147483647)), 8);
 }
 
 int main(int argc, char* argv[]) {

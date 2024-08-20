@@ -60,7 +60,7 @@ TEST(PerformanceTests, Addf32) {
       default:
         break;
       }
-      ff.ClearFlags();
+     //ff.ClearFlags();
 
       valuesfb = valuesfa;
       valuefa = float_rng.Gen();
@@ -79,7 +79,7 @@ TEST(PerformanceTests, Addf32) {
 
       sf_result = ::f32_add(valuesfa, valuesfb);
 
-      ::softfloat_exceptionFlags = 0;
+      //::softfloat_exceptionFlags = 0;
 
       valuesfb.v = valuesfa.v;
       valuesfa.v = std::bit_cast<u32>(float_rng.Gen());
