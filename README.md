@@ -19,29 +19,10 @@ Opposed to many soft float libraries, FloppyFloat does not rely on global state/
 Hence, you can also use it to easily model heterogeneous systems.
 
 ## Features
-At the moment, the following functions and corresponding rounding modes are implemented:
+The following tables shows FloppyFloat functions and their corresponding ISA instructions.
 
-| Function           | RNE | RTZ | RDN | RUP | RMM |
-|--------------------|-----|-----|-----|-----|-----|
-| Add<f16,f32,f64>   | X   | X   | X   | X   | X   |
-| Sub<f16,f32,f64>   | X   | X   | X   | X   | X   |
-| Mul<f16,f32,f64>   | X   | X   | X   | X   | O   |
-| Div<f16,f32,f64>   | X   | X   | X   | X   | O   |
-| Sqrt<f16,f32,f64>  | X   | X   | X   | X   | O   |
-| Fma<f16,f32,f64>   | X   | X   | X   | X   | O   |
-| F32ToI32           | X   | X   | X   | X   | X   |
-| F32ToI64           | X   | X   | X   | X   | X   |
-| F32ToU32           | X   | X   | X   | X   | X   |
-| F32ToU64           | X   | X   | X   | X   | X   |
-| F32ToF64           | X   | X   | X   | X   | X   |
-| F32ToF16           | X   | X   | X   | X   | O   |
-| F64ToI32           | X   | X   | X   | X   | X   |
-| F64ToI64           | X   | X   | X   | X   | X   |
-| Eq<f16,f32,f64>    | X   | X   | X   | X   | X   |
-| Lt<f16,f32,f64>    | X   | X   | X   | X   | X   |
-| Le<f16,f32,f64>    | X   | X   | X   | X   | X   |
 
-| Function           | RISC-V    | x86 SSE     | ARM64  |
+| FloatFunction      | RISC-V    | x86 SSE     | ARM64  |
 |--------------------|-----------|-------------|--------|
 | Add<f16>           | FADD.H    | -           | FADD   |
 | Sub<f16>           | FSUB.H    | -           | FSUB   |
@@ -61,18 +42,50 @@ At the moment, the following functions and corresponding rounding modes are impl
 | F32ToU64           | FCVT.LU.S | (1)         | FCVTxU |
 | F32ToF16           | FCVT.H.S  | -           | FCVT   |
 | F32ToF64           | FCVT.D.S  | CVTSS2SD    | FCVT   |
+| I32ToF16           | FCVT.H.W  | -           | SCVTF  |
+| I32ToF32           | FCVT.S.W  | CVTSI2SS    | SCVTF  |
+| I32ToF64           | FCVT.D.W  | CVTSI2SD    | SCVTF  |
+| U32ToF16           | FCVT.H.WU | -           | UCVTF  |
+| U32ToF32           | FCVT.S.WU | -           | UCVTF  |
+| U32ToF64           | FCVT.D.WU | -           | UCVTF  |
 | Eq<f32>            | FEQ.S     | (2)         | (3)    |
 | Lt<f32>            | FLT.S     | (2)         | (3)    |
 | Le<f32>            | FLE.S     | (2)         | (3)    |
-| MaximumNumber<f32> | FMAX.S    | MAXSS       | (4)    |
-| MinimumNumber<f32> | FMIN.S    | MINSS       | (4)    |
-| F64ToI32           | X         |             |        |
-| F64ToI64           | X         |             |        |
+| MaximumNumber<f32> | FMAX.S    |             | (4)    |
+| MinimumNumber<f32> | FMIN.S    |             | (4)    |
+| MaxX86<f32>        |           | MAXSS       |        |
+| MinX86<f32>        |           | MINSS       |        |
+| Add<f64>           | FADD.D    | ADDSD       | FADD   |
+| Sub<f64>           | FSUB.D    | SUBSD       | FSUB   |
+| Mul<f64>           | FMUL.D    | MULSD       | FMUL   |
+| Div<f64>           | FDIV.D    | DIVSD       | FDIV   |
+| Sqrt<f64>          | FSQRT.D   | SQRTSD      | FSQRT  |
+| Fma<f64>           | FMADD.D   | VFMADDxxxSD | FMADD  |
+| F64ToI32           | FCVT.W.D  | CVTSD2SI    | FCVTxS |
+| F64ToI64           | FCVT.L.D  | CVTSD2SI    | FCVTxS |
+| F64ToU32           | FCVT.WU.D | (5)         | FCVTxU |
+| F64ToU64           | FCVT.LU.D | (5)         | FCVTxU |
+| F64ToF16           | FCVT.H.D  | -           | FCVT   |
+| F64ToF32           | FCVT.S.D  | CVTSS2SD    | FCVT   |
+| Eq<f64>            | FEQ.D     | (2)         | (3)    |
+| Lt<f64>            | FLT.D     | (2)         | (3)    |
+| Le<f64>            | FLE.D     | (2)         | (3)    |
+| MaximumNumber<f64> | FMAX.D    |             | (4)    |
+| MinimumNumber<f64> | FMIN.D    |             | (4)    |
+| MaxX86<f64>        |           | MAXSD       |        |
+| MinX86<f64>        |           | MINSD       |        |
+| I64ToF16           | FCVT.H.L  | -           | SCVTF  |
+| I64ToF32           | FCVT.S.L  | CVTSI2SS    | SCVTF  |
+| I64ToF64           | FCVT.D.L  | CVTSI2SD    | SCVTF  |
+| U64ToF16           | FCVT.H.LU | -           | UCVTF  |
+| U64ToF32           | FCVT.S.LU | -           | UCVTF  |
+| U64ToF64           | FCVT.D.LU | -           | UCVTF  |
 
-(1): Compiled code fpr x86 SSE resorts to CVTSS2SI for F32ToUxx.
+(1): Compiled code for x86 SSE resorts to CVTSS2SI for F32ToUxx.
 (2): x86 SSE uses UCOMISS to achieve a the same functionality.
 (3): ARM64 uses FCMP and FCMPE.
 (4): ARM64 provides FMAXNM/FMINNM and FMAX/FMIN
+(5): Compiled code for x86 SSE resorts to CVTSD2SI for F64ToUxx.
 
 ## Build
 FloppyFloat follows a CMake build process:
@@ -96,6 +109,9 @@ ff.SetQnan<f32>(0xffc00000);
 f32 result = ff.Mul<f32, FloppyFloat::kRoundTowardZero>(a, b);
 ```
 
+## Things You Need To Take Care Of
+- RISC-V NaN Boxing
+
 ## How does it work?
 Coding, algorithms, and a bit of math.
 For a detailed explanation see [this blog post](https://www.chciken.com/simulation/2023/11/12/fast-floating-point-simulation.html).
@@ -103,6 +119,7 @@ For a detailed explanation see [this blog post](https://www.chciken.com/simulati
 ## Issues
 - Overflow exception for `Add`, `Sub`, `Mul`, `Div`, `Sqrt`, `Fma` may not trigger in some cases
 - Underflow exception for `Mul`, `Div`, `Sqrt`, `Fma` may not trigger in some cases
+- ARM's FPCR.DN = 0 needs to be implemented.
 - `Fma` and `Sqrt` for f16 inherits the incorrect rounding problem of glibc (calculates the result as f32 and then casts to f16). Currently, this is fixed by soft float fall back,
 
 For instance,
