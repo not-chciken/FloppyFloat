@@ -212,6 +212,8 @@ constexpr FT FloppyFloat::PropagateNan(FT a, FT b) {
   }
 }
 
+
+// TODO: FROM and TO!
 constexpr f64 FloppyFloat::PropagateNan(f32 a) {
   if (nan_propagation_scheme == kNanPropX86sse) {
     u64 payload = (u64)GetPayload(a) << 29;
@@ -302,7 +304,7 @@ template f32 FloppyFloat::Add<f32>(f32 a, f32 b);
 template f64 FloppyFloat::Add<f64>(f64 a, f64 b);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
-constexpr FT FloppyFloat::Add(FT a, FT b) {
+FT FloppyFloat::Add(FT a, FT b) {
   FT c = a + b;
 
   if (IsInfOrNan(c)) [[unlikely]] {
@@ -405,7 +407,7 @@ template f32 FloppyFloat::Sub<f32>(f32 a, f32 b);
 template f64 FloppyFloat::Sub<f64>(f64 a, f64 b);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
-constexpr FT FloppyFloat::Sub(FT a, FT b) {
+FT FloppyFloat::Sub(FT a, FT b) {
   FT c = a - b;
 
   if (IsInfOrNan(c)) [[unlikely]] {
@@ -508,7 +510,7 @@ template f32 FloppyFloat::Mul<f32>(f32 a, f32 b);
 template f64 FloppyFloat::Mul<f64>(f64 a, f64 b);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
-constexpr FT FloppyFloat::Mul(FT a, FT b) {
+FT FloppyFloat::Mul(FT a, FT b) {
   if constexpr (rm == kRoundTiesToAway) {
     RoundingMode old_rm = rounding_mode;
     rounding_mode = rm;
@@ -605,7 +607,7 @@ template f32 FloppyFloat::Div<f32>(f32 a, f32 b);
 template f64 FloppyFloat::Div<f64>(f64 a, f64 b);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
-constexpr FT FloppyFloat::Div(FT a, FT b) {
+FT FloppyFloat::Div(FT a, FT b) {
   if constexpr (rm == kRoundTiesToAway) {
     RoundingMode old_rm = rounding_mode;
     rounding_mode = rm;
@@ -706,7 +708,7 @@ template f32 FloppyFloat::Sqrt<f32>(f32 a);
 template f64 FloppyFloat::Sqrt<f64>(f64 a);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
-constexpr FT FloppyFloat::Sqrt(FT a) {
+FT FloppyFloat::Sqrt(FT a) {
   if constexpr (rm == kRoundTiesToAway) {
     RoundingMode old_rm = rounding_mode;
     rounding_mode = rm;
@@ -785,7 +787,7 @@ template f32 FloppyFloat::Fma<f32>(f32 a, f32 b, f32 c);
 template f64 FloppyFloat::Fma<f64>(f64 a, f64 b, f64 c);
 
 template <typename FT, FloppyFloat::RoundingMode rm>
-constexpr FT FloppyFloat::Fma(FT a, FT b, FT c) {
+FT FloppyFloat::Fma(FT a, FT b, FT c) {
   if constexpr (std::is_same_v<FT, f16> || (rm == kRoundTiesToAway)) {
     // TODO: Remove once the f16 FMA issue of the standard library is solved.
     RoundingMode old_rm = rounding_mode;
@@ -866,10 +868,10 @@ template f64 FloppyFloat::Fma<f64, FloppyFloat::kRoundTowardPositive>(f64 a, f64
 template f64 FloppyFloat::Fma<f64, FloppyFloat::kRoundTowardNegative>(f64 a, f64 b, f64 c);
 template f64 FloppyFloat::Fma<f64, FloppyFloat::kRoundTowardZero>(f64 a, f64 b, f64 c);
 
-template <typename FT, bool quiet>
-bool FloppyFloat::Eq(FT a, FT b) {
+template <typename FT>
+bool FloppyFloat::EqQuiet(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
-    if (!quiet || IsSnan(a) || IsSnan(b))
+    if (IsSnan(a) || IsSnan(b))
       invalid = true;
     return false;
   }
@@ -877,17 +879,28 @@ bool FloppyFloat::Eq(FT a, FT b) {
   return a == b;
 }
 
-template bool FloppyFloat::Eq<f16, false>(f16 a, f16 b);
-template bool FloppyFloat::Eq<f32, false>(f32 a, f32 b);
-template bool FloppyFloat::Eq<f64, false>(f64 a, f64 b);
-template bool FloppyFloat::Eq<f16, true>(f16 a, f16 b);
-template bool FloppyFloat::Eq<f32, true>(f32 a, f32 b);
-template bool FloppyFloat::Eq<f64, true>(f64 a, f64 b);
+template bool FloppyFloat::EqQuiet<f16>(f16 a, f16 b);
+template bool FloppyFloat::EqQuiet<f32>(f32 a, f32 b);
+template bool FloppyFloat::EqQuiet<f64>(f64 a, f64 b);
 
-template <typename FT, bool quiet>
-bool FloppyFloat::Le(FT a, FT b) {
+template <typename FT>
+bool FloppyFloat::EqSignaling(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
-    if (!quiet || IsSnan(a) || IsSnan(b))
+    invalid = true;
+    return false;
+  }
+
+  return a == b;
+}
+
+template bool FloppyFloat::EqSignaling<f16>(f16 a, f16 b);
+template bool FloppyFloat::EqSignaling<f32>(f32 a, f32 b);
+template bool FloppyFloat::EqSignaling<f64>(f64 a, f64 b);
+
+template <typename FT>
+bool FloppyFloat::LeQuiet(FT a, FT b) {
+  if (IsNan(a) || IsNan(b)) [[unlikely]] {
+    if (IsSnan(a) || IsSnan(b))
       invalid = true;
     return false;
   }
@@ -895,17 +908,28 @@ bool FloppyFloat::Le(FT a, FT b) {
   return a <= b;
 }
 
-template bool FloppyFloat::Le<f16, false>(f16 a, f16 b);
-template bool FloppyFloat::Le<f32, false>(f32 a, f32 b);
-template bool FloppyFloat::Le<f64, false>(f64 a, f64 b);
-template bool FloppyFloat::Le<f16, true>(f16 a, f16 b);
-template bool FloppyFloat::Le<f32, true>(f32 a, f32 b);
-template bool FloppyFloat::Le<f64, true>(f64 a, f64 b);
+template bool FloppyFloat::LeQuiet<f16>(f16 a, f16 b);
+template bool FloppyFloat::LeQuiet<f32>(f32 a, f32 b);
+template bool FloppyFloat::LeQuiet<f64>(f64 a, f64 b);
 
-template <typename FT, bool quiet>
-bool FloppyFloat::Lt(FT a, FT b) {
+template <typename FT>
+bool FloppyFloat::LeSignaling(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
-    if (!quiet || IsSnan(a) || IsSnan(b))
+    invalid = true;
+    return false;
+  }
+
+  return a <= b;
+}
+
+template bool FloppyFloat::LeSignaling<f16>(f16 a, f16 b);
+template bool FloppyFloat::LeSignaling<f32>(f32 a, f32 b);
+template bool FloppyFloat::LeSignaling<f64>(f64 a, f64 b);
+
+template <typename FT>
+bool FloppyFloat::LtQuiet(FT a, FT b) {
+  if (IsNan(a) || IsNan(b)) [[unlikely]] {
+    if (IsSnan(a) || IsSnan(b))
       invalid = true;
     return false;
   }
@@ -913,12 +937,23 @@ bool FloppyFloat::Lt(FT a, FT b) {
   return a < b;
 }
 
-template bool FloppyFloat::Lt<f16, false>(f16 a, f16 b);
-template bool FloppyFloat::Lt<f32, false>(f32 a, f32 b);
-template bool FloppyFloat::Lt<f64, false>(f64 a, f64 b);
-template bool FloppyFloat::Lt<f16, true>(f16 a, f16 b);
-template bool FloppyFloat::Lt<f32, true>(f32 a, f32 b);
-template bool FloppyFloat::Lt<f64, true>(f64 a, f64 b);
+template bool FloppyFloat::LtQuiet<f16>(f16 a, f16 b);
+template bool FloppyFloat::LtQuiet<f32>(f32 a, f32 b);
+template bool FloppyFloat::LtQuiet<f64>(f64 a, f64 b);
+
+template <typename FT>
+bool FloppyFloat::LtSignaling(FT a, FT b) {
+  if (IsNan(a) || IsNan(b)) [[unlikely]] {
+    invalid = true;
+    return false;
+  }
+
+  return a < b;
+}
+
+template bool FloppyFloat::LtSignaling<f16>(f16 a, f16 b);
+template bool FloppyFloat::LtSignaling<f32>(f32 a, f32 b);
+template bool FloppyFloat::LtSignaling<f64>(f64 a, f64 b);
 
 template <typename FT>
 FT FloppyFloat::Maxx86(FT a, FT b) {
@@ -994,6 +1029,26 @@ template f16 FloppyFloat::MinimumNumber<f16>(f16 a, f16 b);
 template f32 FloppyFloat::MinimumNumber<f32>(f32 a, f32 b);
 template f64 FloppyFloat::MinimumNumber<f64>(f64 a, f64 b);
 
+f32 FloppyFloat::F16ToF32(f16 a) {
+  if (IsNan(a)) [[unlikely]] {
+    if (!GetQuietBit(a))
+      invalid = true;
+    return PropagateNan(a);
+  }
+
+  return static_cast<f32>(a);
+}
+
+f64 FloppyFloat::F16ToF64(f16 a) {
+  if (IsNan(a)) [[unlikely]] {
+    if (!GetQuietBit(a))
+      invalid = true;
+    return PropagateNan(a);
+  }
+
+  return static_cast<f64>(a);
+}
+
 // Assumes that "result" was calculated with "kRoundTowardZero"
 template <typename FT, typename IT, FloppyFloat::RoundingMode rm>
 constexpr IT RoundIntegerResult(FT residual, FT source, IT result) {
@@ -1041,7 +1096,7 @@ i32 FloppyFloat::F32ToI32(f32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr inline i32 FloppyFloat::F32ToI32(f32 a) {
+i32 FloppyFloat::F32ToI32(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_i32_;
@@ -1101,7 +1156,7 @@ i64 FloppyFloat::F32ToI64(f32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr i64 FloppyFloat::F32ToI64(f32 a) {
+i64 FloppyFloat::F32ToI64(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_i64_;
@@ -1176,7 +1231,7 @@ u32 FloppyFloat::F32ToU32(f32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr u32 FloppyFloat::F32ToU32(f32 a) {
+u32 FloppyFloat::F32ToU32(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_u32_;
@@ -1240,7 +1295,7 @@ u64 FloppyFloat::F32ToU64(f32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr u64 FloppyFloat::F32ToU64(f32 a) {
+u64 FloppyFloat::F32ToU64(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_u64_;
@@ -1299,7 +1354,7 @@ f16 FloppyFloat::F32ToF16(f32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr f16 FloppyFloat::F32ToF16(f32 a) {
+f16 FloppyFloat::F32ToF16(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     if (!GetQuietBit(a))
       invalid = true;
@@ -1399,7 +1454,7 @@ i32 FloppyFloat::F64ToI32(f64 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr i32 FloppyFloat::F64ToI32(f64 a) {
+i32 FloppyFloat::F64ToI32(f64 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_i32_;
@@ -1459,7 +1514,7 @@ i64 FloppyFloat::F64ToI64(f64 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr i64 FloppyFloat::F64ToI64(f64 a) {
+i64 FloppyFloat::F64ToI64(f64 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_i64_;
@@ -1549,7 +1604,7 @@ u32 FloppyFloat::F64ToU32(f64 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr u32 FloppyFloat::F64ToU32(f64 a) {
+u32 FloppyFloat::F64ToU32(f64 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_u32_;
@@ -1617,7 +1672,7 @@ u64 FloppyFloat::F64ToU64(f64 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr u64 FloppyFloat::F64ToU64(f64 a) {
+u64 FloppyFloat::F64ToU64(f64 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;
     return nan_limit_u64_;
@@ -1667,7 +1722,7 @@ f16 FloppyFloat::I32ToF16(i32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr f16 FloppyFloat::I32ToF16(i32 a) {
+f16 FloppyFloat::I32ToF16(i32 a) {
   f16 af = static_cast<f16>(a);
   u32 ua = std::abs(a);
   u32 shifted_ua = ua << std::countl_zero(ua);
@@ -1711,6 +1766,9 @@ constexpr f16 FloppyFloat::I32ToF16(i32 a) {
     }
   }
 
+  if (IsInf(af))
+    overflow = true;
+
   return af;
 }
 
@@ -1738,7 +1796,7 @@ f32 FloppyFloat::I32ToF32(i32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr f32 FloppyFloat::I32ToF32(i32 a) {
+f32 FloppyFloat::I32ToF32(i32 a) {
   f32 af = static_cast<f32>(a);
   u32 ua = std::abs(a);
   u32 shifted_ua = ua << std::countl_zero(ua);
@@ -1813,7 +1871,7 @@ f32 FloppyFloat::U32ToF32(u32 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr f32 FloppyFloat::U32ToF32(u32 a) {
+f32 FloppyFloat::U32ToF32(u32 a) {
   f32 af = static_cast<f32>(a);
   u32 shifted_ua = a << std::countl_zero(a);
   u32 r = shifted_ua & 0xffu;
@@ -1866,7 +1924,7 @@ f32 FloppyFloat::U64ToF32(u64 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
-constexpr f32 FloppyFloat::U64ToF32(u64 a) {
+f32 FloppyFloat::U64ToF32(u64 a) {
   f32 af = static_cast<f32>(a);
   u64 shifted_ua = a << std::countl_zero(a);
   u64 r = shifted_ua & 0x7ffull;

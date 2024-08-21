@@ -40,6 +40,66 @@ f64 Vfpu::GetQnan<f64>() {
   return qnan64_;
 }
 
+template <typename T>
+T Vfpu::MaxLimit() {
+  if constexpr (std::is_same_v<T, i32>) {
+    return max_limit_i32_;
+  } if constexpr (std::is_same_v<T, u32>) {
+    return max_limit_u32_;
+  } if constexpr (std::is_same_v<T, i64>) {
+    return max_limit_i64_;
+  } if constexpr (std::is_same_v<T, u64>) {
+    return max_limit_u64_;
+  } else {
+    static_assert("Wrong type type");
+  }
+}
+
+template i32 Vfpu::MaxLimit<i32>();
+template i64 Vfpu::MaxLimit<i64>();
+template u32 Vfpu::MaxLimit<u32>();
+template u64 Vfpu::MaxLimit<u64>();
+
+template <typename T>
+T Vfpu::MinLimit() {
+  if constexpr (std::is_same_v<T, i32>) {
+    return min_limit_i32_;
+  } if constexpr (std::is_same_v<T, u32>) {
+    return min_limit_u32_;
+  } if constexpr (std::is_same_v<T, i64>) {
+    return min_limit_i64_;
+  } if constexpr (std::is_same_v<T, u64>) {
+    return min_limit_u64_;
+  } else {
+    static_assert("Wrong type type");
+  }
+}
+
+template i32 Vfpu::MinLimit<i32>();
+template i64 Vfpu::MinLimit<i64>();
+template u32 Vfpu::MinLimit<u32>();
+template u64 Vfpu::MinLimit<u64>();
+
+template <typename T>
+T Vfpu::NanLimit() {
+  if constexpr (std::is_same_v<T, i32>) {
+    return nan_limit_i32_;
+  } if constexpr (std::is_same_v<T, u32>) {
+    return nan_limit_u32_;
+  } if constexpr (std::is_same_v<T, i64>) {
+    return nan_limit_i64_;
+  } if constexpr (std::is_same_v<T, u64>) {
+    return nan_limit_u64_;
+  } else {
+    static_assert("Wrong type type");
+  }
+}
+
+template i32 Vfpu::NanLimit<i32>();
+template i64 Vfpu::NanLimit<i64>();
+template u32 Vfpu::NanLimit<u32>();
+template u64 Vfpu::NanLimit<u64>();
+
 Vfpu::Vfpu() {
   SetQnan<f16>(0x7e00u);
   SetQnan<f32>(0x7fc00000u);

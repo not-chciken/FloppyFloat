@@ -27,6 +27,21 @@ class SoftFloat : public Vfpu {
   template <typename FT>
   FT Fma(FT a, FT b, FT c);
 
+  FfUtils::i32 F16ToI32(FfUtils::f16 a);
+  FfUtils::i64 F16ToI64(FfUtils::f16 a);
+  FfUtils::u32 F16ToU32(FfUtils::f16 a);
+  FfUtils::u64 F16ToU64(FfUtils::f16 a);
+
+  FfUtils::i32 F32ToI32(FfUtils::f32 a);
+  FfUtils::i64 F32ToI64(FfUtils::f32 a);
+  FfUtils::u32 F32ToU32(FfUtils::f32 a);
+  FfUtils::u64 F32ToU64(FfUtils::f32 a);
+
+  FfUtils::i32 F64ToI32(FfUtils::f64 a);
+  FfUtils::i64 F64ToI64(FfUtils::f64 a);
+  FfUtils::u32 F64ToU32(FfUtils::f64 a);
+  FfUtils::u64 F64ToU64(FfUtils::f64 a);
+
   FfUtils::f16 F32ToF16(FfUtils::f32 a);
   FfUtils::f16 F64ToF16(FfUtils::f64 a);
   FfUtils::f32 F64ToF32(FfUtils::f64 a);
@@ -61,6 +76,8 @@ class SoftFloat : public Vfpu {
 
   template<typename TFROM, typename TTO>
   TTO FToF(TFROM a);
+  template<typename TFROM, typename TTO>
+  TTO FToI(TFROM a);
   template<typename TFROM, typename TTO>
   TTO IToF(TFROM a);
 };

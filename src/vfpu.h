@@ -58,6 +58,13 @@ class Vfpu {
   FfUtils::f32 qnan32_;
   FfUtils::f64 qnan64_;
 
+  template <typename T>
+  T MaxLimit();
+  template <typename T>
+  T MinLimit();
+  template <typename T>
+  T NanLimit();
+
   FfUtils::i32 nan_limit_i32_;
   FfUtils::i32 max_limit_i32_;
   FfUtils::i32 min_limit_i32_;

@@ -95,6 +95,7 @@ FT SoftFloat::RoundPack(bool a_sign, i32 a_exp, UT a_mant) {
   u32 addend, rnd_bits;
   switch (rounding_mode) {
   case kRoundTiesToEven:
+    [[fallthrough]];
   case kRoundTiesToAway:
     addend = 1u << (NumRoundBits<FT>() - 1);
     break;
@@ -103,10 +104,10 @@ FT SoftFloat::RoundPack(bool a_sign, i32 a_exp, UT a_mant) {
     break;
   default:
   case kRoundTowardNegative:
-    addend = a_sign ^ 0 ? RoundMask<FT>() : 0;
+    addend = a_sign ? RoundMask<FT>() : 0;
     break;
   case kRoundTowardPositive:
-    addend = a_sign ^ 1 ? RoundMask<FT>() : 0;
+    addend = !a_sign ? RoundMask<FT>() : 0;
     break;
   }
 
@@ -660,6 +661,111 @@ template f16 SoftFloat::FToF<f64, f16>(f64 a);
 template f32 SoftFloat::FToF<f64, f32>(f64 a);
 
 template <typename TFROM, typename TTO>
+TTO SoftFloat::FToI(TFROM a) {
+  static_assert(std::is_floating_point_v<TFROM>);
+  static_assert(std::is_integral_v<TTO>);
+  using UTFROM = FloatToUint<TFROM>::type;
+  using UTTO = typename std::make_unsigned<TTO>::type;
+
+  bool a_sign = std::signbit(a);
+  i32 a_exp = GetExponent(a);
+  UTFROM a_mant = GetSignificand(a);
+
+  if (IsNan(a)) {
+    invalid = true;
+    return NanLimit<TTO>();
+  }
+
+  if (IsInf(a)) {
+    invalid = true;
+    return a_sign ? MinLimit<TTO>() : MaxLimit<TTO>();
+  }
+
+  if (a_exp == 0)
+    a_exp = 1;
+  else
+    a_mant |= (UTFROM)1 << NumSignificandBits<TFROM>();
+
+  a_mant <<= NumRoundBits<TFROM>();
+  a_exp = a_exp - Bias<TFROM>() - NumSignificandBits<TFROM>();
+
+  UTTO r, r_max;
+  if (!std::is_signed_v<TTO>)
+    r_max = (UTTO)a_sign - 1;
+  else
+    r_max = ((UTTO)1 << (NumBits<TTO>() - 1)) - (UTTO)(a_sign ^ 1);
+
+  if (a_exp >= 0) {
+    if (a_exp > (i32)(NumBits<TTO>() - 1 - NumSignificandBits<TFROM>())) {
+      invalid = true;
+      return a_sign ? MinLimit<TTO>() : MaxLimit<TTO>();
+    }
+
+    r = (UTTO)(a_mant >> NumRoundBits<TFROM>()) << a_exp;
+    if (r > r_max) {
+      invalid = true;
+      return a_sign ? MinLimit<TTO>() : MaxLimit<TTO>();
+    }
+
+  } else {
+    u32 addend = 0;
+    a_mant = RshiftRnd<UTFROM>(a_mant, -a_exp);
+
+    switch (rounding_mode) {
+      case kRoundTiesToEven:
+        [[fallthrough]];
+      case kRoundTiesToAway:
+        addend = 1 << (NumRoundBits<TFROM>() - 1);
+        break;
+      case kRoundTowardZero:
+        addend = 0;
+        break;
+      case kRoundTowardNegative:
+        addend = a_sign ? (1 << NumRoundBits<TFROM>()) - 1 : 0;
+        break;
+      case kRoundTowardPositive:
+        addend = !a_sign ? (1 << NumRoundBits<TFROM>()) - 1 : 0;
+        break;
+      default:
+        break;
+    }
+
+    auto rnd_bits = a_mant & ((1 << NumRoundBits<TFROM>()) - 1);
+    a_mant = (a_mant + addend) >> NumRoundBits<TFROM>();
+
+    if (rounding_mode == kRoundTiesToEven && rnd_bits == 1 << (NumRoundBits<TFROM>() - 1))
+      a_mant &= ~1;
+
+    if (a_mant > r_max) {
+      invalid = true;
+      return a_sign ? MinLimit<TTO>() : MaxLimit<TTO>();
+    }
+
+    r = a_mant;
+    if (rnd_bits)
+      inexact = true;
+  }
+
+  if (a_sign)
+    r = -r;
+
+  return r;
+}
+
+template i32 SoftFloat::FToI<f16, i32>(f16 a);
+template i64 SoftFloat::FToI<f16, i64>(f16 a);
+template u32 SoftFloat::FToI<f16, u32>(f16 a);
+template u64 SoftFloat::FToI<f16, u64>(f16 a);
+template i32 SoftFloat::FToI<f32, i32>(f32 a);
+template i64 SoftFloat::FToI<f32, i64>(f32 a);
+template u32 SoftFloat::FToI<f32, u32>(f32 a);
+template u64 SoftFloat::FToI<f32, u64>(f32 a);
+template i32 SoftFloat::FToI<f64, i32>(f64 a);
+template i64 SoftFloat::FToI<f64, i64>(f64 a);
+template u32 SoftFloat::FToI<f64, u32>(f64 a);
+template u64 SoftFloat::FToI<f64, u64>(f64 a);
+
+template <typename TFROM, typename TTO>
 TTO SoftFloat::IToF(TFROM a) {
   using UTTO = FloatToUint<TTO>::type;
   typedef typename std::make_unsigned<TFROM>::type UT;
@@ -692,6 +798,54 @@ TTO SoftFloat::IToF(TFROM a) {
 template f16 SoftFloat::IToF<i32, f16>(i32 a);
 template f32 SoftFloat::IToF<i32, f32>(i32 a);
 template f64 SoftFloat::IToF<i32, f64>(i32 a);
+
+i32 SoftFloat::F16ToI32(f16 a) {
+  return FToI<f16, i32>(a);
+}
+
+i64 SoftFloat::F16ToI64(f16 a) {
+  return FToI<f16, i64>(a);
+}
+
+u32 SoftFloat::F16ToU32(f16 a) {
+  return FToI<f16, u32>(a);
+}
+
+u64 SoftFloat::F16ToU64(f16 a) {
+  return FToI<f16, u64>(a);
+}
+
+i32 SoftFloat::F32ToI32(f32 a) {
+  return FToI<f32, i32>(a);
+}
+
+i64 SoftFloat::F32ToI64(f32 a) {
+  return FToI<f32, i64>(a);
+}
+
+u32 SoftFloat::F32ToU32(f32 a) {
+  return FToI<f32, u32>(a);
+}
+
+u64 SoftFloat::F32ToU64(f32 a) {
+  return FToI<f32, u64>(a);
+}
+
+i32 SoftFloat::F64ToI32(f64 a) {
+  return FToI<f64, i32>(a);
+}
+
+i64 SoftFloat::F64ToI64(f64 a) {
+  return FToI<f64, i64>(a);
+}
+
+u32 SoftFloat::F64ToU32(f64 a) {
+  return FToI<f64, u32>(a);
+}
+
+u64 SoftFloat::F64ToU64(f64 a) {
+  return FToI<f64, u64>(a);
+}
 
 f16 SoftFloat::F32ToF16(f32 a) {
   return FToF<f32, f16>(a);
