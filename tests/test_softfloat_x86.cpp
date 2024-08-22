@@ -69,7 +69,7 @@ void CheckResult(T1 ff_result_u, T2 sf_result_u, size_t i) {
 
 template <typename FT, typename FFFUNC, typename SFFUNC, int num_args>
 void DoTest(FFFUNC ff_func, SFFUNC sf_func) {
-  ff.SetupTox86();
+  ff.SetupToX86();
 
   ::softfloat_exceptionFlags = 0;
   ff.ClearFlags();

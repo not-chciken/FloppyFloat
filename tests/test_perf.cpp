@@ -119,12 +119,20 @@ void DoTest(std::string name, FloppyFloat& ff, FFFUNC ff_func, SFFUNC sf_func) {
 
   begin = std::chrono::steady_clock::now();
   for (size_t i = 0; i < kNumIterations; ++i) {
+    // if(rm == FloppyFloat::kRoundTiesToEven) {
+    //   [[maybe_unused]] auto ff_result = ff.Add<FT, FloppyFloat::kRoundTiesToEven>(valuefa, valuefb);
+    // } else  if(rm == FloppyFloat::kRoundTiesToAway) {
+    //   [[maybe_unused]] auto ff_result = ff.Add<FT, FloppyFloat::kRoundTiesToAway>(valuefa, valuefb);
+    // } else  if(rm == FloppyFloat::kRoundTowardPositive) {
+    //   [[maybe_unused]] auto ff_result = ff.Add<FT, FloppyFloat::kRoundTowardPositive>(valuefa, valuefb);
+    // }
     if constexpr (args == 1) [[maybe_unused]]
       auto ff_result = ff_func(valuefa);
     if constexpr (args == 2) [[maybe_unused]]
       auto ff_result = ff_func(valuefa, valuefb);
     if constexpr (args == 3) [[maybe_unused]]
       auto ff_result = ff_func(valuefa, valuefb, valuefc);
+
     if constexpr (flags)
       ff.ClearFlags();
 
@@ -146,232 +154,220 @@ int main() {
   FloppyFloat ff;
   ff.SetupTox86();
 
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_add, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Add32Template",
-  //   ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_add, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Add32Switch", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_add, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Add32Alt", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_add, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToAway>("Add32RMM", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_add, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
-  //       "Add32RUPTemplate", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_add, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
-  //       "Add32RUPSwitch", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_add, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
-  //       "Add32RUPAlt", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_add, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardNegative>(
-  //       "Add32RDN", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_add, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardZero>("Add32RTZ", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sub<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_sub, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Sub32", ff,
-  //   ff_func,
-  //                                                                                                  sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sub<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_sub, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToAway>("Sub32RMM", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sub<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_sub, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
-  //       "Sub32RUP", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sub<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_sub, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardNegative>(
-  //       "Sub32RDN", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sub<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_sub, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardZero>("Sub32RTZ", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Mul<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_mul, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
-  //       "Mul32RUP", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Mul<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_mul, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Mul32", ff,
-  //   ff_func,
-  //                                                                                                  sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Mul<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_mul, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardNegative>(
-  //       "Mul32RDN", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Mul<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_mul, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardZero>("Mul32RTZ", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Fma<f32>, ff, _1, _2, _3);
-  //   auto sf_func = std::bind(&::f32_mulAdd, _1, _2, _3);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 3, FloppyFloat::kRoundTiesToEven>("Fma32", ff,
-  //   ff_func,
-  //                                                                                                  sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Fma<f32>, ff, _1, _2, _3);
-  //   auto sf_func = std::bind(&::f32_mulAdd, _1, _2, _3);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 3, FloppyFloat::kRoundTowardPositive>(
-  //       "Fma32RUP", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Fma<f32>, ff, _1, _2, _3);
-  //   auto sf_func = std::bind(&::f32_mulAdd, _1, _2, _3);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 3, FloppyFloat::kRoundTowardNegative>(
-  //       "Fma32RDN", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Fma<f32>, ff, _1, _2, _3);
-  //   auto sf_func = std::bind(&::f32_mulAdd, _1, _2, _3);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 3, FloppyFloat::kRoundTowardZero>("Fma32RTZ", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Div<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_div, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Div32", ff,
-  //   ff_func,
-  //                                                                                                  sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Div<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_div, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
-  //       "Div32RUP", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Div<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_div, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardNegative>(
-  //       "Div32RDN", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Div<f32>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f32_div, _1, _2);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardZero>("Div32RTZ", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sqrt<f32>, ff, _1);
-  //   auto sf_func = std::bind(&::f32_sqrt, _1);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 1, FloppyFloat::kRoundTiesToEven>("Sqrt32", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sqrt<f32>, ff, _1);
-  //   auto sf_func = std::bind(&::f32_sqrt, _1);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 1, FloppyFloat::kRoundTowardPositive>(
-  //       "Sqrt32RUP", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sqrt<f32>, ff, _1);
-  //   auto sf_func = std::bind(&::f32_sqrt, _1);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 1, FloppyFloat::kRoundTowardNegative>(
-  //       "Sqrt32RDN", ff, ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sqrt<f32>, ff, _1);
-  //   auto sf_func = std::bind(&::f32_sqrt, _1);
-  //   DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 1, FloppyFloat::kRoundTowardZero>("Sqrt32RTZ", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Add<f64>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f64_add, _1, _2);
-  //   DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Add64", ff,
-  //   ff_func,
-  //                                                                                                  sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sub<f64>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f64_sub, _1, _2);
-  //   DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Sub64", ff,
-  //   ff_func,
-  //                                                                                                  sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Mul<f64>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f64_mul, _1, _2);
-  //   DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Mul64", ff,
-  //   ff_func,
-  //                                                                                                  sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Fma<f64>, ff, _1, _2, _3);
-  //   auto sf_func = std::bind(&::f64_mulAdd, _1, _2, _3);
-  //   DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 3, FloppyFloat::kRoundTiesToEven>("Fma64", ff,
-  //   ff_func,
-  //                                                                                                  sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Div<f64>, ff, _1, _2);
-  //   auto sf_func = std::bind(&::f64_div, _1, _2);
-  //   DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Div64", ff,
-  //   ff_func,
-  //                                                                                                  sf_func);
-  // }
-  // {
-  //   auto ff_func = std::bind(&FloppyFloat::Sqrt<f64>, ff, _1);
-  //   auto sf_func = std::bind(&::f64_sqrt, _1);
-  //   DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 1, FloppyFloat::kRoundTiesToEven>("Sqrt64", ff,
-  //                                                                                                  ff_func, sf_func);
-  // }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_add, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Add32Template",
+    ff,
+                                                                                                   ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_add, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToAway>("Add32RMM", ff,
+                                                                                                   ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_add, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
+        "Add32RUPTemplate", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_add, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
+        "Add32RUPSwitch", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_add, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
+        "Add32RUPAlt", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_add, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardNegative>(
+        "Add32RDN", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_add, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardZero>("Add32RTZ", ff,
+                                                                                                   ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sub<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_sub, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Sub32", ff,
+    ff_func,
+                                                                                                   sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sub<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_sub, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToAway>("Sub32RMM", ff,
+                                                                                                   ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sub<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_sub, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
+        "Sub32RUP", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sub<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_sub, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardNegative>(
+        "Sub32RDN", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sub<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_sub, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardZero>("Sub32RTZ", ff,
+                                                                                                   ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Mul<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_mul, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
+        "Mul32RUP", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Mul<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_mul, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Mul32", ff,
+    ff_func,
+                                                                                                   sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Mul<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_mul, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardNegative>(
+        "Mul32RDN", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Mul<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_mul, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardZero>("Mul32RTZ", ff,
+                                                                                                   ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Fma<f32>, ff, _1, _2, _3);
+    auto sf_func = std::bind(&::f32_mulAdd, _1, _2, _3);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 3, FloppyFloat::kRoundTiesToEven>("Fma32", ff,
+    ff_func,
+                                                                                                   sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Fma<f32>, ff, _1, _2, _3);
+    auto sf_func = std::bind(&::f32_mulAdd, _1, _2, _3);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 3, FloppyFloat::kRoundTowardPositive>(
+        "Fma32RUP", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Fma<f32>, ff, _1, _2, _3);
+    auto sf_func = std::bind(&::f32_mulAdd, _1, _2, _3);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 3, FloppyFloat::kRoundTowardNegative>(
+        "Fma32RDN", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Fma<f32>, ff, _1, _2, _3);
+    auto sf_func = std::bind(&::f32_mulAdd, _1, _2, _3);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 3, FloppyFloat::kRoundTowardZero>("Fma32RTZ", ff,
+                                                                                                   ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Div<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_div, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Div32", ff,
+    ff_func,
+                                                                                                   sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Div<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_div, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardPositive>(
+        "Div32RUP", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Div<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_div, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardNegative>(
+        "Div32RDN", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Div<f32>, ff, _1, _2);
+    auto sf_func = std::bind(&::f32_div, _1, _2);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTowardZero>("Div32RTZ", ff,
+                                                                                                   ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sqrt<f32>, ff, _1);
+    auto sf_func = std::bind(&::f32_sqrt, _1);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 1, FloppyFloat::kRoundTiesToEven>("Sqrt32", ff,
+                                                                                                   ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sqrt<f32>, ff, _1);
+    auto sf_func = std::bind(&::f32_sqrt, _1);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 1, FloppyFloat::kRoundTowardPositive>(
+        "Sqrt32RUP", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sqrt<f32>, ff, _1);
+    auto sf_func = std::bind(&::f32_sqrt, _1);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 1, FloppyFloat::kRoundTowardNegative>(
+        "Sqrt32RDN", ff, ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sqrt<f32>, ff, _1);
+    auto sf_func = std::bind(&::f32_sqrt, _1);
+    DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 1, FloppyFloat::kRoundTowardZero>("Sqrt32RTZ", ff,
+                                                                                                   ff_func, sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Add<f64>, ff, _1, _2);
+    auto sf_func = std::bind(&::f64_add, _1, _2);
+    DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Add64", ff,
+    ff_func,
+                                                                                                   sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sub<f64>, ff, _1, _2);
+    auto sf_func = std::bind(&::f64_sub, _1, _2);
+    DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Sub64", ff,
+    ff_func,
+                                                                                                   sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Mul<f64>, ff, _1, _2);
+    auto sf_func = std::bind(&::f64_mul, _1, _2);
+    DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Mul64", ff,
+    ff_func,
+                                                                                                   sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Fma<f64>, ff, _1, _2, _3);
+    auto sf_func = std::bind(&::f64_mulAdd, _1, _2, _3);
+    DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 3, FloppyFloat::kRoundTiesToEven>("Fma64", ff,
+    ff_func,
+                                                                                                   sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Div<f64>, ff, _1, _2);
+    auto sf_func = std::bind(&::f64_div, _1, _2);
+    DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToEven>("Div64", ff,
+    ff_func,
+                                                                                                   sf_func);
+  }
+  {
+    auto ff_func = std::bind(&FloppyFloat::Sqrt<f64>, ff, _1);
+    auto sf_func = std::bind(&::f64_sqrt, _1);
+    DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 1, FloppyFloat::kRoundTiesToEven>("Sqrt64", ff,
+                                                                                                   ff_func, sf_func);
+  }
   {
     auto ff_func = std::bind(static_cast<i32 (FloppyFloat::*)(f32)>(&FloppyFloat::F32ToI32), ff, _1);
     auto sf_func = std::bind(&::f32_to_i32, _1, ::softfloat_round_minMag, true);
@@ -470,37 +466,37 @@ int main() {
                                                                                                    ff_func, sf_func);
   }
   {
-    auto ff_func = std::bind(&FloppyFloat::Lt<f32, true>, ff, _1, _2);
+    auto ff_func = std::bind(&FloppyFloat::LtSignaling<f32>, ff, _1, _2);
     auto sf_func = std::bind(&::f32_lt, _1, _2);
     DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToAway>("Lt32", ff, ff_func,
                                                                                                    sf_func);
   }
   {
-    auto ff_func = std::bind(&FloppyFloat::Lt<f64, true>, ff, _1, _2);
+    auto ff_func = std::bind(&FloppyFloat::LtSignaling<f64>, ff, _1, _2);
     auto sf_func = std::bind(&::f64_lt, _1, _2);
     DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToAway>("Lt64", ff, ff_func,
                                                                                                    sf_func);
   }
   {
-    auto ff_func = std::bind(&FloppyFloat::Eq<f32, true>, ff, _1, _2);
+    auto ff_func = std::bind(&FloppyFloat::EqQuiet<f32>, ff, _1, _2);
     auto sf_func = std::bind(&::f32_eq, _1, _2);
     DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToAway>("Eq32", ff, ff_func,
                                                                                                    sf_func);
   }
   {
-    auto ff_func = std::bind(&FloppyFloat::Eq<f64, true>, ff, _1, _2);
+    auto ff_func = std::bind(&FloppyFloat::EqQuiet<f64>, ff, _1, _2);
     auto sf_func = std::bind(&::f64_eq, _1, _2);
     DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToAway>("Eq64", ff, ff_func,
                                                                                                    sf_func);
   }
   {
-    auto ff_func = std::bind(&FloppyFloat::Le<f32, true>, ff, _1, _2);
+    auto ff_func = std::bind(&FloppyFloat::LeSignaling<f32>, ff, _1, _2);
     auto sf_func = std::bind(&::f32_le, _1, _2);
     DoTest<f32, float32_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToAway>("Le32", ff, ff_func,
                                                                                                    sf_func);
   }
   {
-    auto ff_func = std::bind(&FloppyFloat::Le<f64, true>, ff, _1, _2);
+    auto ff_func = std::bind(&FloppyFloat::LeSignaling<f64>, ff, _1, _2);
     auto sf_func = std::bind(&::f64_le, _1, _2);
     DoTest<f64, float64_t, decltype(ff_func), decltype(sf_func), 2, FloppyFloat::kRoundTiesToAway>("Le64", ff, ff_func,
                                                                                                    sf_func);

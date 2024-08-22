@@ -9,6 +9,8 @@
 
 #include "utils.h"
 
+using namespace FfUtils;
+
 std::array<f32, 12> values = {1.f,
                               -1.f,
                               +0.f,

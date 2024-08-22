@@ -80,7 +80,7 @@ std::array<std::pair<uint_fast8_t, SoftFloat::RoundingMode>, 5> rounding_modes{
 
 template <typename FT, typename FFFUNC, typename SFFUNC, int num_args>
 void DoTest(FFFUNC ff_func, SFFUNC sf_func) {
-  sf.SetupToRiscv();
+  sf.SetupToX86();
 
   ::softfloat_exceptionFlags = 0;
   sf.ClearFlags();
