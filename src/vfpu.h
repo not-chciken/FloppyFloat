@@ -31,12 +31,7 @@ class Vfpu {
 
   // kNanPropArm64DefaultNan => FPCR.DN = 1
   // kNanPropArm64 => FPCR.DN = 0
-  enum NanPropagationSchemes {
-    kNanPropRiscv,
-    kNanPropX86sse,
-    kNanPropArm64DefaultNan,
-    kNanPropArm64
-  } nan_propagation_scheme;
+  enum NanPropagationSchemes { kNanPropRiscv, kNanPropX86sse, kNanPropArm64DefaultNan, kNanPropArm64 } nan_propagation_scheme;
   bool tininess_before_rounding = false;
   bool invalid_fma = true;  // If true, FMA raises invalid for "∞ × 0 + qNaN". See IEE 754 ("7.2 Invalid operation").
 
@@ -51,7 +46,7 @@ class Vfpu {
 
   void SetupToArm64();
   void SetupToRiscv();
-  void SetupTox86();
+  void SetupToX86();
 
  protected:
   FfUtils::f16 qnan16_;
@@ -77,4 +72,11 @@ class Vfpu {
   FfUtils::u64 nan_limit_u64_;
   FfUtils::u64 max_limit_u64_;
   FfUtils::u64 min_limit_u64_;
+
+  struct RmGuard {
+    RoundingMode old_rm;
+    Vfpu* vfpu;
+    RmGuard(Vfpu* vfpu, RoundingMode rm);
+    ~RmGuard();
+  };
 };

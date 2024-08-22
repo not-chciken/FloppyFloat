@@ -44,11 +44,14 @@ template <typename T>
 T Vfpu::MaxLimit() {
   if constexpr (std::is_same_v<T, i32>) {
     return max_limit_i32_;
-  } if constexpr (std::is_same_v<T, u32>) {
+  }
+  if constexpr (std::is_same_v<T, u32>) {
     return max_limit_u32_;
-  } if constexpr (std::is_same_v<T, i64>) {
+  }
+  if constexpr (std::is_same_v<T, i64>) {
     return max_limit_i64_;
-  } if constexpr (std::is_same_v<T, u64>) {
+  }
+  if constexpr (std::is_same_v<T, u64>) {
     return max_limit_u64_;
   } else {
     static_assert("Wrong type type");
@@ -64,11 +67,14 @@ template <typename T>
 T Vfpu::MinLimit() {
   if constexpr (std::is_same_v<T, i32>) {
     return min_limit_i32_;
-  } if constexpr (std::is_same_v<T, u32>) {
+  }
+  if constexpr (std::is_same_v<T, u32>) {
     return min_limit_u32_;
-  } if constexpr (std::is_same_v<T, i64>) {
+  }
+  if constexpr (std::is_same_v<T, i64>) {
     return min_limit_i64_;
-  } if constexpr (std::is_same_v<T, u64>) {
+  }
+  if constexpr (std::is_same_v<T, u64>) {
     return min_limit_u64_;
   } else {
     static_assert("Wrong type type");
@@ -84,11 +90,14 @@ template <typename T>
 T Vfpu::NanLimit() {
   if constexpr (std::is_same_v<T, i32>) {
     return nan_limit_i32_;
-  } if constexpr (std::is_same_v<T, u32>) {
+  }
+  if constexpr (std::is_same_v<T, u32>) {
     return nan_limit_u32_;
-  } if constexpr (std::is_same_v<T, i64>) {
+  }
+  if constexpr (std::is_same_v<T, i64>) {
     return nan_limit_i64_;
-  } if constexpr (std::is_same_v<T, u64>) {
+  }
+  if constexpr (std::is_same_v<T, u64>) {
     return nan_limit_u64_;
   } else {
     static_assert("Wrong type type");
@@ -121,6 +130,7 @@ void Vfpu::SetupToArm64() {
   SetQnan<f32>(0x7fc00000u);
   SetQnan<f64>(0x7ff8000000000000ull);
   tininess_before_rounding = true;
+  invalid_fma = true;
   nan_propagation_scheme = kNanPropArm64DefaultNan;  // Shares the same NaN propagation as ARM.
 
   nan_limit_i32_ = 0;
@@ -165,7 +175,7 @@ void Vfpu::SetupToRiscv() {
   min_limit_u64_ = std::numeric_limits<u64>::min();
 }
 
-void Vfpu::SetupTox86() {
+void Vfpu::SetupToX86() {
   SetQnan<f16>(0xfe00u);
   SetQnan<f32>(0xffc00000u);
   SetQnan<f64>(0xfff8000000000000ull);
@@ -188,4 +198,13 @@ void Vfpu::SetupTox86() {
   nan_limit_u64_ = std::numeric_limits<u64>::max();
   max_limit_u64_ = std::numeric_limits<u64>::max();
   min_limit_u64_ = std::numeric_limits<u64>::max();
+}
+
+Vfpu::RmGuard::RmGuard(Vfpu* vfpu, RoundingMode rm) : vfpu(vfpu) {
+  old_rm = vfpu->rounding_mode;
+  vfpu->rounding_mode = rm;
+}
+
+Vfpu::RmGuard::~RmGuard() {
+  vfpu->rounding_mode = old_rm;
 }

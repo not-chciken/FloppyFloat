@@ -399,6 +399,12 @@ constexpr bool IsTiny(FT a) {
 }
 
 template <typename FT>
+constexpr bool MayResultFromUnderflow(FT a) {
+  static_assert(std::is_floating_point<FT>::value);
+  return std::abs(a) <= nl<FT>::min();
+}
+
+template <typename FT>
 constexpr bool IsSubnormal(FT a) {
   static_assert(std::is_floating_point<FT>::value);
   return (std::abs(a) < nl<FT>::min()) && !IsZero(a);
@@ -428,6 +434,12 @@ template <typename FT>
 constexpr u64 MaxSignificand() {
   static_assert(std::is_floating_point<FT>::value);
   return (1ull << NumSignificandBits<FT>()) - 1ull;
+}
+
+template <typename FT>
+constexpr FT SetQuietBit(FT a) {
+  auto au = std::bit_cast<typename FloatToUint<FT>::type>(a);
+  return std::bit_cast<FT>((decltype(au))(QuietBit<FT>::u | au));
 }
 
 template <typename FT>

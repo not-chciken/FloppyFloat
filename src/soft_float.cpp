@@ -1,5 +1,7 @@
 #include "soft_float.h"
 
+#include <stdexcept>
+#include <string>
 #include <utility>
 
 using namespace FfUtils;
@@ -75,8 +77,8 @@ constexpr bool Usqrt(UT& root, UT ah, UT al) {
     return false;
   }
 
-  int l = ah ? NumBits<UTT>() - std::countl_zero(static_cast<UT>(ah - 1))
-             : NumBits<UT>() - std::countl_zero(static_cast<UT>(al - 1));
+  int l =
+      ah ? NumBits<UTT>() - std::countl_zero(static_cast<UT>(ah - 1)) : NumBits<UT>() - std::countl_zero(static_cast<UT>(al - 1));
   UTT u = 1ull << (l + 1) / 2;
   UTT a = static_cast<UTT>(ah) << NumBits<UT>() | al;
   UTT s = 0;
@@ -145,6 +147,13 @@ FT SoftFloat::RoundPack(bool a_sign, i32 a_exp, UT a_mant) {
 template <typename FT>
 FT SoftFloat::Add(FT a, FT b) {
   using UT = FloatToUint<FT>::type;
+
+  if (IsNan(a) || IsNan(b)) [[unlikely]] {
+    if (IsSnan(a) || IsSnan(b))
+      invalid = true;
+    return PropagateNan<FT>(a, b);
+  }
+
   if ((std::bit_cast<UT>(a) & ~SignMask<FT>()) < (std::bit_cast<UT>(b) & ~SignMask<FT>()))
     std::swap(a, b);
 
@@ -156,11 +165,7 @@ FT SoftFloat::Add(FT a, FT b) {
   UT b_mant = GetSignificand<FT>(b) << 3;
 
   if (a_exp == MaxExponent<FT>()) [[unlikely]] {
-    if (a_mant != 0) {  // NaN case.
-      if (!IsQnan(a) || IsSnan(b))
-        invalid = true;
-      return GetQnan<FT>();
-    } else if ((b_exp == MaxExponent<FT>()) && (a_sign != b_sign)) {  // Infinity case.
+    if ((b_exp == MaxExponent<FT>()) && (a_sign != b_sign)) {  // Infinity case.
       invalid = true;
       return GetQnan<FT>();
     }
@@ -199,6 +204,13 @@ template f64 SoftFloat::Add<f64>(f64 a, f64 b);
 template <typename FT>
 FT SoftFloat::Sub(FT a, FT b) {
   using UT = FloatToUint<FT>::type;
+
+  if (IsNan(a) || IsNan(b)) [[unlikely]] {
+    if (IsSnan(a) || IsSnan(b))
+      invalid = true;
+    return PropagateNan<FT>(a, b);
+  }
+
   bool a_sign = std::signbit(a);
   bool b_sign = !std::signbit(b);
 
@@ -256,6 +268,13 @@ template f64 SoftFloat::Sub<f64>(f64 a, f64 b);
 template <typename FT>
 inline FT SoftFloat::Mul(FT a, FT b) {
   using UT = FloatToUint<FT>::type;
+
+  if (IsNan(a) || IsNan(b)) [[unlikely]] {
+    if (IsSnan(a) || IsSnan(b))
+      invalid = true;
+    return PropagateNan<FT>(a, b);
+  }
+
   bool a_sign = std::signbit(a);
   bool b_sign = std::signbit(b);
   bool r_sign = a_sign ^ b_sign;
@@ -311,6 +330,13 @@ template f64 SoftFloat::Mul<f64>(f64 a, f64 b);
 template <typename FT>
 FT SoftFloat::Div(FT a, FT b) {
   using UT = FloatToUint<FT>::type;
+
+  if (IsNan(a) || IsNan(b)) [[unlikely]] {
+    if (IsSnan(a) || IsSnan(b))
+      invalid = true;
+    return PropagateNan<FT>(a, b);
+  }
+
   bool a_sign = std::signbit(a);
   bool b_sign = std::signbit(b);
   bool r_sign = a_sign ^ b_sign;
@@ -378,6 +404,13 @@ template f64 SoftFloat::Div<f64>(f64 a, f64 b);
 template <typename FT>
 FT SoftFloat::Sqrt(FT a) {
   using UT = FloatToUint<FT>::type;
+
+  if (IsNan(a)) [[unlikely]] {
+    if (IsSnan(a))
+      invalid = true;
+    return PropagateNan<FT>(a, a);
+  }
+
   u32 a_sign = std::signbit(a);
   i32 a_exp = GetExponent<FT>(a);
   UT a_mant = GetSignificand<FT>(a);
@@ -433,6 +466,15 @@ template f64 SoftFloat::Sqrt<f64>(f64 a);
 template <typename FT>
 FT SoftFloat::Fma(FT a, FT b, FT c) {
   using UT = FloatToUint<FT>::type;
+
+  if (IsNan(a) || IsNan(b) || IsNan(c)) [[unlikely]] {
+    if (IsSnan(a) || IsSnan(b) || IsSnan(c))
+      invalid = true;
+    if (IsNan(c) && ((IsZero(a) && IsInf(b)) || (IsZero(b) && IsInf(a))))
+        invalid = invalid_fma ? true : invalid;
+    return PropagateNan<FT>(a, b, c);
+  }
+
   bool a_sign = std::signbit(a);
   bool b_sign = std::signbit(b);
   bool c_sign = std::signbit(c);
@@ -445,27 +487,15 @@ FT SoftFloat::Fma(FT a, FT b, FT c) {
   UT c_mant = GetSignificand<FT>(c);
 
   if (a_exp == MaxExponent<FT>() || b_exp == MaxExponent<FT>() || c_exp == MaxExponent<FT>()) {
-    if (IsNan(a) || IsNan(b) || IsNan(c)) {
-      if (IsSnan(a) || IsSnan(b) || IsSnan(c))
-        invalid = true;
-
-      if (IsNan(c) && ((IsZero(a) && IsInf(b)) || (IsZero(b) && IsInf(a)))) {
-        invalid = true;
-      }
-
+    if ((a_exp == MaxExponent<FT>() && (b_exp == 0 && b_mant == 0)) ||
+        (b_exp == MaxExponent<FT>() && (a_exp == 0 && a_mant == 0)) ||
+        ((a_exp == MaxExponent<FT>() || b_exp == MaxExponent<FT>()) && (c_exp == MaxExponent<FT>() && r_sign != c_sign))) {
+      invalid = true;
       return GetQnan<FT>();
+    } else if (c_exp == MaxExponent<FT>()) {
+      return FloatFrom3Tuple<FT>(c_sign, MaxExponent<FT>(), 0);
     } else {
-      if ((a_exp == MaxExponent<FT>() && (b_exp == 0 && b_mant == 0)) ||
-          (b_exp == MaxExponent<FT>() && (a_exp == 0 && a_mant == 0)) ||
-          ((a_exp == MaxExponent<FT>() || b_exp == MaxExponent<FT>()) &&
-           (c_exp == MaxExponent<FT>() && r_sign != c_sign))) {
-        invalid = true;
-        return GetQnan<FT>();
-      } else if (c_exp == MaxExponent<FT>()) {
-        return FloatFrom3Tuple<FT>(c_sign, MaxExponent<FT>(), 0);
-      } else {
-        return FloatFrom3Tuple<FT>(r_sign, MaxExponent<FT>(), 0);
-      }
+      return FloatFrom3Tuple<FT>(r_sign, MaxExponent<FT>(), 0);
     }
   }
 
@@ -712,22 +742,22 @@ TTO SoftFloat::FToI(TFROM a) {
     a_mant = RshiftRnd<UTFROM>(a_mant, -a_exp);
 
     switch (rounding_mode) {
-      case kRoundTiesToEven:
-        [[fallthrough]];
-      case kRoundTiesToAway:
-        addend = 1 << (NumRoundBits<TFROM>() - 1);
-        break;
-      case kRoundTowardZero:
-        addend = 0;
-        break;
-      case kRoundTowardNegative:
-        addend = a_sign ? (1 << NumRoundBits<TFROM>()) - 1 : 0;
-        break;
-      case kRoundTowardPositive:
-        addend = !a_sign ? (1 << NumRoundBits<TFROM>()) - 1 : 0;
-        break;
-      default:
-        break;
+    case kRoundTiesToEven:
+      [[fallthrough]];
+    case kRoundTiesToAway:
+      addend = 1 << (NumRoundBits<TFROM>() - 1);
+      break;
+    case kRoundTowardZero:
+      addend = 0;
+      break;
+    case kRoundTowardNegative:
+      addend = a_sign ? (1 << NumRoundBits<TFROM>()) - 1 : 0;
+      break;
+    case kRoundTowardPositive:
+      addend = !a_sign ? (1 << NumRoundBits<TFROM>()) - 1 : 0;
+      break;
+    default:
+      break;
     }
 
     auto rnd_bits = a_mant & ((1 << NumRoundBits<TFROM>()) - 1);
@@ -857,4 +887,44 @@ f16 SoftFloat::F64ToF16(f64 a) {
 
 f32 SoftFloat::F64ToF32(f64 a) {
   return FToF<f64, f32>(a);
+}
+
+template <typename FT>
+constexpr FT SoftFloat::PropagateNan(FT a, FT b) {
+  FT result;
+  switch (nan_propagation_scheme) {
+  case kNanPropX86sse:
+    result = IsNan(a) ? SetQuietBit(a) : SetQuietBit(b);
+    break;
+  case kNanPropRiscv:
+    result = GetQnan<FT>();
+    break;
+  case kNanPropArm64DefaultNan:
+    result = GetQnan<FT>();
+    break;
+  default:
+    throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
+  }
+  return result;
+}
+
+template <typename FT>
+constexpr FT SoftFloat::PropagateNan(FT a, FT b, FT c) {
+  FT result;
+  switch (nan_propagation_scheme) {
+  case kNanPropX86sse:
+    result = ((IsInf(a) && IsZero(b)) || (IsZero(a) && IsInf(b))) ? GetQnan<FT>() : static_cast<FT>(0.);
+    result = (IsNan(a) || IsNan(b)) ? PropagateNan<FT>(a, b) : result;
+    result = PropagateNan<FT>(result, c);
+    break;
+  case kNanPropRiscv:
+    result = GetQnan<FT>();
+    break;
+  case kNanPropArm64DefaultNan:
+    result = GetQnan<FT>();
+    break;
+  default:
+    throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
+  }
+  return result;
 }

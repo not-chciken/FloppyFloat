@@ -80,4 +80,9 @@ class SoftFloat : public Vfpu {
   TTO FToI(TFROM a);
   template<typename TFROM, typename TTO>
   TTO IToF(TFROM a);
+
+  template <typename FT>
+  constexpr FT PropagateNan(FT a, FT b);
+  template <typename FT>
+  constexpr FT PropagateNan(FT a, FT b, FT c);
 };

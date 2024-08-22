@@ -123,7 +123,7 @@ class FloppyFloat : public SoftFloat {
   FfUtils::f64 I32ToF64(FfUtils::i32 a);
 
   template <RoundingMode rm>
-  FfUtils::f32 U32ToF32(FfUtils::u32 a);  // TODO: implement
+  FfUtils::f32 U32ToF32(FfUtils::u32 a);
   FfUtils::f32 U32ToF32(FfUtils::u32 a);
   FfUtils::f64 U32ToF64(FfUtils::u32 a);
 
@@ -136,5 +136,7 @@ class FloppyFloat : public SoftFloat {
   constexpr FT RoundResult(TFT residual, FT result);
   template <typename FT>
   constexpr FT PropagateNan(FT a, FT b);
+  template <typename FT>
+  constexpr FT PropagateNan(FT a, FT b, FT c);
   constexpr FfUtils::f64 PropagateNan(FfUtils::f32 a);
 };
