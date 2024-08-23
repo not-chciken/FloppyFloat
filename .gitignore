@@ -1,4 +1,4 @@
 build
 tmp
-.out
+*.out
 .vscode

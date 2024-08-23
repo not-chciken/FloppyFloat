@@ -2,7 +2,7 @@
 Language: Cpp
 BasedOnStyle: Google
 
-ColumnLimit: 120
+ColumnLimit: 130
 IndentWidth: 2
 UseTab: Never
 IndentCaseLabels: false

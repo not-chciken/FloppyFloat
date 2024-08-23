@@ -87,7 +87,9 @@ void DoTest(FFFUNC ff_func, SFFUNC sf_func) {
 #if defined(ARCH_RISCV)
   ff.SetupToRiscv();
 #elif defined(ARCH_X86)
-  ff.SetupTox86();
+  ff.SetupToX86();
+#elif defined(ARCH_ARM)
+  ff.SetupToArm();
 #endif
 
   ::softfloat_exceptionFlags = 0;
@@ -140,8 +142,10 @@ void DoTest(FFFUNC ff_func, SFFUNC sf_func) {
   #define TEST_SUITE_NAME SoftFloatFloppyFloatRiscvTests
 #elif defined(ARCH_X86)
   #define TEST_SUITE_NAME SoftFloatFloppyFloatX86Tests
+#elif defined(ARCH_ARM)
+  #define TEST_SUITE_NAME SoftFloatFloppyFloatArmTests
 #else
-  static_assert("Unknown architecture");
+  static_assert(false, "Unknown architecture");
 #endif
 
 #define TEST_MACRO_BASE(name, ff_op, sf_op, type, rm, rm_name, nargs, ...)       \

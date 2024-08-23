@@ -44,7 +44,7 @@ class Vfpu {
   template <typename FT>
   FT GetQnan();
 
-  void SetupToArm64();
+  void SetupToArm();
   void SetupToRiscv();
   void SetupToX86();
 

@@ -7,6 +7,7 @@
 
 #include <bit>
 #include <bitset>
+#include <cassert>
 #include <cmath>
 #include <stdexcept>
 
@@ -157,7 +158,7 @@ constexpr FT RoundInf(FT result) {
   } else if constexpr (rm == FloppyFloat::kRoundTiesToAway) {
     return result;
   } else {
-    static_assert("Using unsupported rounding mode");
+    static_assert(false, "Using unsupported rounding mode");
   }
 }
 
@@ -184,9 +185,32 @@ constexpr FT FloppyFloat::RoundResult([[maybe_unused]] TFT residual, FT result) 
       overflow = IsNegInf(result) ? true : overflow;
     }
   } else {
-    static_assert("Using unsupported rounding mode");
+    assert(false && "Using unsupported rounding mode");
   }
   return result;
+}
+
+template <typename TFROM, typename TTO>
+constexpr TTO FloppyFloat::PropagateNan(TFROM a) {
+  static_assert(std::is_floating_point_v<TFROM>);
+  static_assert(std::is_floating_point_v<TTO>);
+  using UTTO = FloatToUint<TTO>::type;
+  if (nan_propagation_scheme == kNanPropX86sse) {
+    UTTO payload;
+    if constexpr (NumBits<TTO>() > NumBits<TFROM>()) {
+      payload = static_cast<UTTO>(GetPayload(a)) << (NumSignificandBits<TTO>() - NumSignificandBits<TFROM>());
+    } else {
+      payload = GetPayload(a) >> (NumSignificandBits<TFROM>() - NumSignificandBits<TTO>());
+    }
+    UTTO result = (((UTTO)std::signbit(a)) << (NumBits<TTO>() - 1)) | (ExponentMask<TTO>() | QuietBit<TTO>::u) | payload;
+    return std::bit_cast<TTO>(result);
+  } else if (nan_propagation_scheme == kNanPropRiscv) {
+    return GetQnan<TTO>();
+  } else if (nan_propagation_scheme == kNanPropArm64DefaultNan) {
+    return GetQnan<TTO>();
+  } else {
+    throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
+  }
 }
 
 template <typename FT>
@@ -229,21 +253,6 @@ constexpr FT FloppyFloat::PropagateNan(FT a, FT b, FT c) {
   return result;
 }
 
-// TODO: FROM and TO!
-constexpr f64 FloppyFloat::PropagateNan(f32 a) {
-  if (nan_propagation_scheme == kNanPropX86sse) {
-    u64 payload = (u64)GetPayload(a) << 29;
-    u64 result = (((u64)std::signbit(a)) << 63) | 0x7ff8000000000000ull | payload;
-    return std::bit_cast<f64>(result);
-  } else if (nan_propagation_scheme == kNanPropRiscv) {
-    return GetQnan<f64>();
-  } else if (nan_propagation_scheme == kNanPropArm64DefaultNan) {
-    return GetQnan<f64>();
-  } else {
-    throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
-  }
-}
-
 template <typename FT>
 FT GetRScaled(FT r) {
   FT r_scaled;
@@ -254,7 +263,7 @@ FT GetRScaled(FT r) {
   } else if constexpr (std::is_same_v<FT, f64>) {
     r_scaled = r * 9007199254740992.0f64;  // 2**53
   } else {
-    static_assert("Unsupported data type");
+    static_assert(false, "Unsupported data type");
   }
   return r_scaled;
 }
@@ -293,7 +302,7 @@ constexpr bool IsOverflow(FT a, FT b, FT c) {
   } else if constexpr (rm == FloppyFloat::kRoundTiesToAway) {
     return true;
   } else {
-    static_assert("Using unsupported rounding mode");
+    static_assert(false, "Using unsupported rounding mode");
   }
 }
 
@@ -1021,7 +1030,7 @@ FT FloppyFloat::MaximumNumber(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
       invalid = true;
-    if (IsNan(a) || IsNan(b))
+    if (IsNan(a) && IsNan(b))
       return GetQnan<FT>();
     return IsNan(a) ? b : a;
   }
@@ -1041,7 +1050,7 @@ FT FloppyFloat::MinimumNumber(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
       invalid = true;
-    if (IsNan(a) || IsNan(b))
+    if (IsNan(a) && IsNan(b))
       return GetQnan<FT>();
     return IsNan(a) ? b : a;
   }
@@ -1060,7 +1069,7 @@ f32 FloppyFloat::F16ToF32(f16 a) {
   if (IsNan(a)) [[unlikely]] {
     if (!GetQuietBit(a))
       invalid = true;
-    return PropagateNan(a);
+    return PropagateNan<f16, f32>(a);
   }
 
   return static_cast<f32>(a);
@@ -1070,7 +1079,7 @@ f64 FloppyFloat::F16ToF64(f16 a) {
   if (IsNan(a)) [[unlikely]] {
     if (!GetQuietBit(a))
       invalid = true;
-    return PropagateNan(a);
+    return PropagateNan<f16, f64>(a);
   }
 
   return static_cast<f64>(a);
@@ -1236,7 +1245,7 @@ bool ResultOutOfURange(FT a) {
   } else if constexpr (rm == FloppyFloat::kRoundTiesToAway) {
     return a <= -0.5f;
   } else {
-    static_assert("Using unsupported rounding mode");
+    static_assert(false, "Using unsupported rounding mode");
   }
 }
 
@@ -1357,7 +1366,7 @@ f64 FloppyFloat::F32ToF64(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     if (!GetQuietBit(a))
       invalid = true;
-    return PropagateNan(a);
+    return PropagateNan<f32, f64>(a);
   }
 
   return static_cast<f64>(a);
@@ -1382,10 +1391,14 @@ f16 FloppyFloat::F32ToF16(f32 a) {
 
 template <FloppyFloat::RoundingMode rm>
 f16 FloppyFloat::F32ToF16(f32 a) {
+  if constexpr (rm == kRoundTiesToAway) {
+    return SoftFloat::F32ToF16(a);
+  }
+
   if (IsNan(a)) [[unlikely]] {
     if (!GetQuietBit(a))
       invalid = true;
-    return GetQnan<f16>();
+    return PropagateNan<f32, f16>(a);
   }
 
   f16 result = static_cast<f16>(a);

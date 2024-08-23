@@ -134,9 +134,15 @@ class FloppyFloat : public SoftFloat {
  protected:
   template <typename FT, typename TFT, RoundingMode rm>
   constexpr FT RoundResult(TFT residual, FT result);
+
+  template <typename TFROM, typename TTO>
+  constexpr TTO PropagateNan(TFROM a);
+
   template <typename FT>
   constexpr FT PropagateNan(FT a, FT b);
+
   template <typename FT>
   constexpr FT PropagateNan(FT a, FT b, FT c);
-  constexpr FfUtils::f64 PropagateNan(FfUtils::f32 a);
+
+  //constexpr FfUtils::f64 PropagateNan(FfUtils::f32 a);
 };

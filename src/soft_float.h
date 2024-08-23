@@ -32,19 +32,18 @@ class SoftFloat : public Vfpu {
   FfUtils::u32 F16ToU32(FfUtils::f16 a);
   FfUtils::u64 F16ToU64(FfUtils::f16 a);
 
+  FfUtils::f16 F32ToF16(FfUtils::f32 a);
   FfUtils::i32 F32ToI32(FfUtils::f32 a);
   FfUtils::i64 F32ToI64(FfUtils::f32 a);
   FfUtils::u32 F32ToU32(FfUtils::f32 a);
   FfUtils::u64 F32ToU64(FfUtils::f32 a);
 
+  FfUtils::f16 F64ToF16(FfUtils::f64 a);
+  FfUtils::f32 F64ToF32(FfUtils::f64 a);
   FfUtils::i32 F64ToI32(FfUtils::f64 a);
   FfUtils::i64 F64ToI64(FfUtils::f64 a);
   FfUtils::u32 F64ToU32(FfUtils::f64 a);
   FfUtils::u64 F64ToU64(FfUtils::f64 a);
-
-  FfUtils::f16 F32ToF16(FfUtils::f32 a);
-  FfUtils::f16 F64ToF16(FfUtils::f64 a);
-  FfUtils::f32 F64ToF32(FfUtils::f64 a);
 
   FfUtils::f16 I32ToF16(FfUtils::i32 a);
   FfUtils::f32 I32ToF32(FfUtils::i32 a);
@@ -64,7 +63,7 @@ class SoftFloat : public Vfpu {
 
   protected:
   template <typename FT, typename UT>
-  FT RoundPack(bool a_sign, FfUtils::i32 a_exp, UT a_mant);
+  constexpr FT RoundPack(bool a_sign, FfUtils::i32 a_exp, UT a_mant);
 
   template <typename FT, typename UT>
   constexpr UT NormalizeSubnormal(FfUtils::i32& exp, UT mant);
@@ -81,6 +80,8 @@ class SoftFloat : public Vfpu {
   template<typename TFROM, typename TTO>
   TTO IToF(TFROM a);
 
+  template <typename TFROM, typename TTO>
+  constexpr TTO PropagateNan(TFROM a);
   template <typename FT>
   constexpr FT PropagateNan(FT a, FT b);
   template <typename FT>

@@ -44,17 +44,14 @@ template <typename T>
 T Vfpu::MaxLimit() {
   if constexpr (std::is_same_v<T, i32>) {
     return max_limit_i32_;
-  }
-  if constexpr (std::is_same_v<T, u32>) {
+  } else if constexpr (std::is_same_v<T, u32>) {
     return max_limit_u32_;
-  }
-  if constexpr (std::is_same_v<T, i64>) {
+  } else if constexpr (std::is_same_v<T, i64>) {
     return max_limit_i64_;
-  }
-  if constexpr (std::is_same_v<T, u64>) {
+  } else if constexpr (std::is_same_v<T, u64>) {
     return max_limit_u64_;
   } else {
-    static_assert("Wrong type type");
+    static_assert(false, "Wrong type type");
   }
 }
 
@@ -67,17 +64,14 @@ template <typename T>
 T Vfpu::MinLimit() {
   if constexpr (std::is_same_v<T, i32>) {
     return min_limit_i32_;
-  }
-  if constexpr (std::is_same_v<T, u32>) {
+  } else if constexpr (std::is_same_v<T, u32>) {
     return min_limit_u32_;
-  }
-  if constexpr (std::is_same_v<T, i64>) {
+  } else if constexpr (std::is_same_v<T, i64>) {
     return min_limit_i64_;
-  }
-  if constexpr (std::is_same_v<T, u64>) {
+  } else if constexpr (std::is_same_v<T, u64>) {
     return min_limit_u64_;
   } else {
-    static_assert("Wrong type type");
+    static_assert(false, "Wrong type type");
   }
 }
 
@@ -90,17 +84,14 @@ template <typename T>
 T Vfpu::NanLimit() {
   if constexpr (std::is_same_v<T, i32>) {
     return nan_limit_i32_;
-  }
-  if constexpr (std::is_same_v<T, u32>) {
+  } else if constexpr (std::is_same_v<T, u32>) {
     return nan_limit_u32_;
-  }
-  if constexpr (std::is_same_v<T, i64>) {
+  } else if constexpr (std::is_same_v<T, i64>) {
     return nan_limit_i64_;
-  }
-  if constexpr (std::is_same_v<T, u64>) {
+  } else if constexpr (std::is_same_v<T, u64>) {
     return nan_limit_u64_;
   } else {
-    static_assert("Wrong type type");
+    static_assert(false, "Wrong type type");
   }
 }
 
@@ -125,7 +116,7 @@ void Vfpu::ClearFlags() {
   inexact = false;
 }
 
-void Vfpu::SetupToArm64() {
+void Vfpu::SetupToArm() {
   SetQnan<f16>(0x7e00u);
   SetQnan<f32>(0x7fc00000u);
   SetQnan<f64>(0x7ff8000000000000ull);

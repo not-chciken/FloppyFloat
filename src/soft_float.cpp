@@ -93,7 +93,7 @@ constexpr bool Usqrt(UT& root, UT ah, UT al) {
 }
 
 template <typename FT, typename UT>
-FT SoftFloat::RoundPack(bool a_sign, i32 a_exp, UT a_mant) {
+constexpr FT SoftFloat::RoundPack(bool a_sign, i32 a_exp, UT a_mant) {
   u32 addend, rnd_bits;
   switch (rounding_mode) {
   case kRoundTiesToEven:
@@ -117,6 +117,7 @@ FT SoftFloat::RoundPack(bool a_sign, i32 a_exp, UT a_mant) {
     rnd_bits = a_mant & RoundMask<FT>();
   } else {
     bool subnormal = a_exp < 0 || (a_mant + addend) < (1ull << (NumBits<FT>() - 1));
+    subnormal = tininess_before_rounding ? true : subnormal;
     a_mant = RshiftRnd<UT>(a_mant, 1 - a_exp);
     rnd_bits = a_mant & RoundMask<FT>();
     if (subnormal && rnd_bits)
@@ -665,9 +666,9 @@ TTO SoftFloat::FToF(TFROM a) {
 
   if (a_exp == MaxExponent<TFROM>()) {
     if (a_mant != 0) {
-      if (IsSnan(a))
+      if (!GetQuietBit<TFROM>(a))
         invalid = true;
-      return GetQnan<TTO>();
+      return PropagateNan<TFROM, TTO>(a);
     }
 
     return FloatFrom3Tuple<TTO>(a_sign, MaxExponent<TTO>(), 0);
@@ -887,6 +888,29 @@ f16 SoftFloat::F64ToF16(f64 a) {
 
 f32 SoftFloat::F64ToF32(f64 a) {
   return FToF<f64, f32>(a);
+}
+
+template<typename TFROM, typename TTO>
+constexpr TTO SoftFloat::PropagateNan(TFROM a) {
+  static_assert(std::is_floating_point_v<TFROM>);
+  static_assert(std::is_floating_point_v<TTO>);
+  using UTTO = FloatToUint<TTO>::type;
+  if (nan_propagation_scheme == kNanPropX86sse) {
+    UTTO payload;
+    if constexpr (NumBits<TTO>() > NumBits<TFROM>()) {
+      payload = static_cast<UTTO>(GetPayload(a)) << (NumSignificandBits<TTO>() - NumSignificandBits<TFROM>());
+    } else {
+      payload = GetPayload(a) >> (NumSignificandBits<TFROM>() - NumSignificandBits<TTO>());
+    }
+    UTTO result = (((UTTO)std::signbit(a)) << (NumBits<TTO>() - 1)) | (ExponentMask<TTO>() | QuietBit<TTO>::u) | payload;
+    return std::bit_cast<TTO>(result);
+  } else if (nan_propagation_scheme == kNanPropRiscv) {
+    return GetQnan<TTO>();
+  } else if (nan_propagation_scheme == kNanPropArm64DefaultNan) {
+    return GetQnan<TTO>();
+  } else {
+    throw std::runtime_error(std::string("Unknown NaN propagation scheme"));
+  }
 }
 
 template <typename FT>
