@@ -1427,9 +1427,7 @@ f16 FloppyFloat::F32ToF16(f32 a) {
   if (!underflow) {
     if (std::abs(result) <= nl<f16>::min()) [[unlikely]] {
       if (std::abs(result) == nl<f16>::min()) {
-        residual = static_cast<f32>(result) - a;
-        if (std::signbit(residual) == std::signbit(result))
-          underflow = true;
+        result = SoftFloat::F32ToF16(a);
       } else {
         if (residual != 0.f32)
           underflow = true;
