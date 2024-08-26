@@ -144,5 +144,14 @@ class FloppyFloat : public SoftFloat {
   template <typename FT>
   constexpr FT PropagateNan(FT a, FT b, FT c);
 
+  template <typename FT, FloppyFloat::RoundingMode rm>
+  constexpr auto UpMul(FT a, FT b, FT& c);
+  template <typename FT, FloppyFloat::RoundingMode rm>
+  constexpr auto UpDiv(FT a, FT b, FT& c);
+  template <typename FT, FloppyFloat::RoundingMode rm>
+  constexpr auto UpSqrt(FT a, FT& b);
+  template <typename FT, FloppyFloat::RoundingMode rm>
+  constexpr auto UpFma(FT a, FT b, FT c, FT& d);
+
   //constexpr FfUtils::f64 PropagateNan(FfUtils::f32 a);
 };

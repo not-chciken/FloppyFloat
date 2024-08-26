@@ -7,6 +7,48 @@
 #include <stdfloat>
 #include <type_traits>
 
+#define FLOPPY_FLOAT_FUNC_1(result, rounding_mode, func, ...)       \
+  switch (rounding_mode) {                                          \
+  case Vfpu::kRoundTiesToEven:                                      \
+    result = func<Vfpu::kRoundTiesToEven>(__VA_ARGS__);             \
+    break;                                                          \
+  case Vfpu::kRoundTiesToAway:                                      \
+    result = func<Vfpu::kRoundTiesToAway>(__VA_ARGS__);             \
+    break;                                                          \
+  case Vfpu::kRoundTowardPositive:                                  \
+    result = func<Vfpu::kRoundTowardPositive>(__VA_ARGS__);         \
+    break;                                                          \
+  case Vfpu::kRoundTowardNegative:                                  \
+    result = func<Vfpu::kRoundTowardNegative>(__VA_ARGS__);         \
+    break;                                                          \
+  case Vfpu::kRoundTowardZero:                                      \
+    result = func<Vfpu::kRoundTowardZero>(__VA_ARGS__);             \
+    break;                                                          \
+  default:                                                          \
+    throw std::runtime_error(std::string("Unknown rounding mode")); \
+  }
+
+#define FLOPPY_FLOAT_FUNC_2(result, rounding_mode, func, ftype, ...) \
+  switch (rounding_mode) {                                           \
+  case Vfpu::kRoundTiesToEven:                                       \
+    result = func<ftype, Vfpu::kRoundTiesToEven>(__VA_ARGS__);       \
+    break;                                                           \
+  case Vfpu::kRoundTiesToAway:                                       \
+    result = func<ftype, Vfpu::kRoundTiesToAway>(__VA_ARGS__);       \
+    break;                                                           \
+  case Vfpu::kRoundTowardPositive:                                   \
+    result = func<ftype, Vfpu::kRoundTowardPositive>(__VA_ARGS__);   \
+    break;                                                           \
+  case Vfpu::kRoundTowardNegative:                                   \
+    result = func<ftype, Vfpu::kRoundTowardNegative>(__VA_ARGS__);   \
+    break;                                                           \
+  case Vfpu::kRoundTowardZero:                                       \
+    result = func<ftype, Vfpu::kRoundTowardZero>(__VA_ARGS__);       \
+    break;                                                           \
+  default:                                                           \
+    throw std::runtime_error(std::string("Unknown rounding mode"));  \
+  }
+
 namespace FfUtils {
 
 using f16 = std::float16_t;

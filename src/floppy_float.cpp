@@ -42,18 +42,25 @@ constexpr FT UpMulFma(FT a, FT b, FT c) {
   return r;
 }
 
-template <typename FT>
-constexpr TwiceWidthType<FT>::type UpMul(FT a, FT b, FT c) {
+template <typename FT, FloppyFloat::RoundingMode rm>
+constexpr auto FloppyFloat::UpMul(FT a, FT b, FT& c) {
   if constexpr (std::is_same_v<FT, f64>) {
-    if (std::abs(c) > 4.008336720017946e-292) [[likely]]
-      return UpMulFma<FT>(a, b, c);
+    f64 r;
+    if (std::abs(c) > 4.008336720017946e-292) [[likely]] {
+      r = UpMulFma<FT>(a, b, c);
+    } else {
+      r = 0.f64;
+      RmGuard rg(this, rm);
+      c = SoftFloat::Mul(a, b);
+    }
+    return r;
+  } else {
+    auto da = static_cast<TwiceWidthType<FT>::type>(a);
+    auto db = static_cast<TwiceWidthType<FT>::type>(b);
+    auto dc = static_cast<TwiceWidthType<FT>::type>(c);
+    auto r = dc - da * db;
+    return r;
   }
-
-  auto da = static_cast<TwiceWidthType<FT>::type>(a);
-  auto db = static_cast<TwiceWidthType<FT>::type>(b);
-  auto dc = static_cast<TwiceWidthType<FT>::type>(c);
-  auto r = dc - da * db;
-  return r;
 }
 
 template <typename FT>
@@ -62,18 +69,25 @@ constexpr FT UpDivFma(FT a, FT b, FT c) {
   return std::signbit(b) ? -r : r;
 }
 
-template <typename FT>
-constexpr TwiceWidthType<FT>::type UpDiv(FT a, FT b, FT c) {
+template <typename FT, FloppyFloat::RoundingMode rm>
+constexpr auto FloppyFloat::UpDiv(FT a, FT b, FT& c) {
   if constexpr (std::is_same_v<FT, f64>) {
-    if (std::abs(a) > 4.008336720017946e-292) [[likely]]
-      return UpDivFma<FT>(a, b, c);
+    f64 r;
+    if (std::abs(a) > 4.008336720017946e-292) [[likely]] {
+      r = UpDivFma<FT>(a, b, c);
+    } else {
+      r = 0.f64;
+      RmGuard rg(this, rm);
+      c = SoftFloat::Div(a, b);
+    }
+    return r;
+  } else {
+    auto da = static_cast<TwiceWidthType<FT>::type>(a);
+    auto db = static_cast<TwiceWidthType<FT>::type>(b);
+    auto dc = static_cast<TwiceWidthType<FT>::type>(c);
+    auto r = dc * db - da;
+    return std::signbit(b) ? -r : r;
   }
-
-  auto da = static_cast<TwiceWidthType<FT>::type>(a);
-  auto db = static_cast<TwiceWidthType<FT>::type>(b);
-  auto dc = static_cast<TwiceWidthType<FT>::type>(c);
-  auto r = dc * db - da;
-  return std::signbit(b) ? -r : r;
 }
 
 template <typename FT>
@@ -82,29 +96,43 @@ constexpr FT UpSqrtFma(FT a, FT b) {
   return r;
 }
 
-template <typename FT>
-constexpr TwiceWidthType<FT>::type UpSqrt(FT a, FT b) {
+template <typename FT, FloppyFloat::RoundingMode rm>
+constexpr auto FloppyFloat::UpSqrt(FT a, FT& b) {
   if constexpr (std::is_same_v<FT, f64>) {
-    if (std::abs(a) > 4.008336720017946e-292) [[likely]]
-      return UpSqrtFma<FT>(a, b);
+    f64 r;
+    if (std::abs(a) > 4.008336720017946e-292) [[likely]] {
+      r = UpSqrtFma<FT>(a, b);
+    } else {
+      r = 0.f64;
+      RmGuard rg(this, rm);
+      b = SoftFloat::Sqrt(a);
+    }
+    return r;
+  } else {
+    auto da = static_cast<TwiceWidthType<FT>::type>(a);
+    auto db = static_cast<TwiceWidthType<FT>::type>(b);
+    auto r = db * db - da;
+    return r;
   }
-  auto da = static_cast<TwiceWidthType<FT>::type>(a);
-  auto db = static_cast<TwiceWidthType<FT>::type>(b);
-  auto r = db * db - da;
-  return r;
 }
 
-template <typename FT>
-constexpr TwiceWidthType<FT>::type UpFma(FT a, FT b, FT c, FT d) {
-  auto da = static_cast<TwiceWidthType<FT>::type>(a);
-  auto db = static_cast<TwiceWidthType<FT>::type>(b);
-  auto dc = static_cast<TwiceWidthType<FT>::type>(c);
-  auto dd = static_cast<TwiceWidthType<FT>::type>(d);
-  auto p = da * db;
-  auto di = p + dc;
-  auto r1 = TwoSum<typename TwiceWidthType<FT>::type>(p, dc, di);
-  auto r2 = dd - di;
-  return r1 + r2;
+template <typename FT, FloppyFloat::RoundingMode rm>
+constexpr auto FloppyFloat::UpFma(FT a, FT b, FT c, FT& d) {
+  if constexpr (std::is_same_v<FT, f64>) {
+    RmGuard rg(this, rm);
+    d = SoftFloat::Fma(a, b, c);
+    return 0.f64;
+  } else {
+    auto da = static_cast<TwiceWidthType<FT>::type>(a);
+    auto db = static_cast<TwiceWidthType<FT>::type>(b);
+    auto dc = static_cast<TwiceWidthType<FT>::type>(c);
+    auto dd = static_cast<TwiceWidthType<FT>::type>(d);
+    auto p = da * db;
+    auto di = p + dc;
+    auto r1 = TwoSum<typename TwiceWidthType<FT>::type>(p, dc, di);
+    auto r2 = dd - di;
+    return r1 + r2;
+  }
 }
 
 template <>
@@ -566,7 +594,7 @@ FT FloppyFloat::Mul(FT a, FT b) {
 
   if constexpr (rm == kRoundTiesToEven) {
     if (!inexact) [[unlikely]] {
-      auto r = UpMul<FT>(a, b, c);
+      auto r = UpMul<FT, rm>(a, b, c);
       if (!IsZero(r))
         inexact = true;
     }
@@ -577,7 +605,7 @@ FT FloppyFloat::Mul(FT a, FT b) {
       }
     }
   } else {
-    auto r = UpMul(a, b, c);
+    auto r = UpMul<FT, rm>(a, b, c);
     if (!IsZero(r)) {
       inexact = true;
       c = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, c);
@@ -674,7 +702,7 @@ FT FloppyFloat::Div(FT a, FT b) {
 
   if constexpr (rm == kRoundTiesToEven) {
     if (!inexact) [[unlikely]] {
-      auto r = UpDiv<FT>(a, b, c);
+      auto r = UpDiv<FT, rm>(a, b, c);
       if (!IsZero(r))
         inexact = true;
     }
@@ -685,7 +713,7 @@ FT FloppyFloat::Div(FT a, FT b) {
       }
     }
   } else {
-    auto r = UpDiv<FT>(a, b, c);
+    auto r = UpDiv<FT, rm>(a, b, c);
     if (!IsZero(r)) {
       inexact = true;
       c = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, c);
@@ -708,16 +736,19 @@ template f16 FloppyFloat::Div<f16, FloppyFloat::kRoundTiesToEven>(f16 a, f16 b);
 template f16 FloppyFloat::Div<f16, FloppyFloat::kRoundTowardPositive>(f16 a, f16 b);
 template f16 FloppyFloat::Div<f16, FloppyFloat::kRoundTowardNegative>(f16 a, f16 b);
 template f16 FloppyFloat::Div<f16, FloppyFloat::kRoundTowardZero>(f16 a, f16 b);
+template f16 FloppyFloat::Div<f16, FloppyFloat::kRoundTiesToAway>(f16 a, f16 b);
 
 template f32 FloppyFloat::Div<f32, FloppyFloat::kRoundTiesToEven>(f32 a, f32 b);
 template f32 FloppyFloat::Div<f32, FloppyFloat::kRoundTowardPositive>(f32 a, f32 b);
 template f32 FloppyFloat::Div<f32, FloppyFloat::kRoundTowardNegative>(f32 a, f32 b);
 template f32 FloppyFloat::Div<f32, FloppyFloat::kRoundTowardZero>(f32 a, f32 b);
+template f32 FloppyFloat::Div<f32, FloppyFloat::kRoundTiesToAway>(f32 a, f32 b);
 
 template f64 FloppyFloat::Div<f64, FloppyFloat::kRoundTiesToEven>(f64 a, f64 b);
 template f64 FloppyFloat::Div<f64, FloppyFloat::kRoundTowardPositive>(f64 a, f64 b);
 template f64 FloppyFloat::Div<f64, FloppyFloat::kRoundTowardNegative>(f64 a, f64 b);
 template f64 FloppyFloat::Div<f64, FloppyFloat::kRoundTowardZero>(f64 a, f64 b);
+template f64 FloppyFloat::Div<f64, FloppyFloat::kRoundTiesToAway>(f64 a, f64 b);
 
 template <typename FT>
 FT FloppyFloat::Sqrt(FT a) {
@@ -763,14 +794,14 @@ FT FloppyFloat::Sqrt(FT a) {
     if (!inexact) [[unlikely]] {
       if (IsInf(a)) [[unlikely]]
         return b;
-      auto r = UpSqrt<FT>(a, b);
+      auto r = UpSqrt<FT, rm>(a, b);
       if (!IsZero(r))
         inexact = true;
     }
   } else {
     if (IsInf(a)) [[unlikely]]
       return b;
-    auto r = UpSqrt<FT>(a, b);
+    auto r = UpSqrt<FT, rm>(a, b);
     if (!IsZero(r)) {
       inexact = true;
       b = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, b);
@@ -784,16 +815,19 @@ template f16 FloppyFloat::Sqrt<f16, FloppyFloat::kRoundTiesToEven>(f16 a);
 template f16 FloppyFloat::Sqrt<f16, FloppyFloat::kRoundTowardPositive>(f16 a);
 template f16 FloppyFloat::Sqrt<f16, FloppyFloat::kRoundTowardNegative>(f16 a);
 template f16 FloppyFloat::Sqrt<f16, FloppyFloat::kRoundTowardZero>(f16 a);
+template f16 FloppyFloat::Sqrt<f16, FloppyFloat::kRoundTiesToAway>(f16 a);
 
 template f32 FloppyFloat::Sqrt<f32, FloppyFloat::kRoundTiesToEven>(f32 a);
 template f32 FloppyFloat::Sqrt<f32, FloppyFloat::kRoundTowardPositive>(f32 a);
 template f32 FloppyFloat::Sqrt<f32, FloppyFloat::kRoundTowardNegative>(f32 a);
 template f32 FloppyFloat::Sqrt<f32, FloppyFloat::kRoundTowardZero>(f32 a);
+template f32 FloppyFloat::Sqrt<f32, FloppyFloat::kRoundTiesToAway>(f32 a);
 
 template f64 FloppyFloat::Sqrt<f64, FloppyFloat::kRoundTiesToEven>(f64 a);
 template f64 FloppyFloat::Sqrt<f64, FloppyFloat::kRoundTowardPositive>(f64 a);
 template f64 FloppyFloat::Sqrt<f64, FloppyFloat::kRoundTowardNegative>(f64 a);
 template f64 FloppyFloat::Sqrt<f64, FloppyFloat::kRoundTowardZero>(f64 a);
+template f64 FloppyFloat::Sqrt<f64, FloppyFloat::kRoundTiesToAway>(f64 a);
 
 template <typename FT>
 FT FloppyFloat::Fma(FT a, FT b, FT c) {
@@ -859,7 +893,7 @@ FT FloppyFloat::Fma(FT a, FT b, FT c) {
 
   if constexpr (rm == kRoundTiesToEven) {
     if (!inexact) [[unlikely]] {
-      auto r = UpFma<FT>(a, b, c, d);
+      auto r = UpFma<FT, rm>(a, b, c, d);
       if (!IsZero(r))
         inexact = true;
     }
@@ -870,7 +904,7 @@ FT FloppyFloat::Fma(FT a, FT b, FT c) {
       }
     }
   } else {
-    auto r = UpFma<FT>(a, b, c, d);
+    auto r = UpFma<FT, rm>(a, b, c, d);
     if (!IsZero(r)) {
       inexact = true;
       d = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, d);
@@ -893,16 +927,19 @@ template f16 FloppyFloat::Fma<f16, FloppyFloat::kRoundTiesToEven>(f16 a, f16 b, 
 template f16 FloppyFloat::Fma<f16, FloppyFloat::kRoundTowardPositive>(f16 a, f16 b, f16 c);
 template f16 FloppyFloat::Fma<f16, FloppyFloat::kRoundTowardNegative>(f16 a, f16 b, f16 c);
 template f16 FloppyFloat::Fma<f16, FloppyFloat::kRoundTowardZero>(f16 a, f16 b, f16 c);
+template f16 FloppyFloat::Fma<f16, FloppyFloat::kRoundTiesToAway>(f16 a, f16 b, f16 c);
 
 template f32 FloppyFloat::Fma<f32, FloppyFloat::kRoundTiesToEven>(f32 a, f32 b, f32 c);
 template f32 FloppyFloat::Fma<f32, FloppyFloat::kRoundTowardPositive>(f32 a, f32 b, f32 c);
 template f32 FloppyFloat::Fma<f32, FloppyFloat::kRoundTowardNegative>(f32 a, f32 b, f32 c);
 template f32 FloppyFloat::Fma<f32, FloppyFloat::kRoundTowardZero>(f32 a, f32 b, f32 c);
+template f32 FloppyFloat::Fma<f32, FloppyFloat::kRoundTiesToAway>(f32 a, f32 b, f32 c);
 
 template f64 FloppyFloat::Fma<f64, FloppyFloat::kRoundTiesToEven>(f64 a, f64 b, f64 c);
 template f64 FloppyFloat::Fma<f64, FloppyFloat::kRoundTowardPositive>(f64 a, f64 b, f64 c);
 template f64 FloppyFloat::Fma<f64, FloppyFloat::kRoundTowardNegative>(f64 a, f64 b, f64 c);
 template f64 FloppyFloat::Fma<f64, FloppyFloat::kRoundTowardZero>(f64 a, f64 b, f64 c);
+template f64 FloppyFloat::Fma<f64, FloppyFloat::kRoundTiesToAway>(f64 a, f64 b, f64 c);
 
 template <typename FT>
 bool FloppyFloat::EqQuiet(FT a, FT b) {
@@ -1442,7 +1479,7 @@ template f16 FloppyFloat::F32ToF16<FloppyFloat::kRoundTiesToEven>(f32 a);
 template f16 FloppyFloat::F32ToF16<FloppyFloat::kRoundTowardPositive>(f32 a);
 template f16 FloppyFloat::F32ToF16<FloppyFloat::kRoundTowardNegative>(f32 a);
 template f16 FloppyFloat::F32ToF16<FloppyFloat::kRoundTowardZero>(f32 a);
-// template f16 FloppyFloat::F32ToF16<FloppyFloat::kRoundTiesToAway>(f32 a); // TODO
+template f16 FloppyFloat::F32ToF16<FloppyFloat::kRoundTiesToAway>(f32 a);
 
 template <FloppyFloat::RoundingMode rm>
 constexpr f64 F64ToI32NegLimit() {
