@@ -1,0 +1,3 @@
+[submodule "tests/berkeley-softfloat-3"]
+	path = tests/berkeley-softfloat-3
+	url = https://github.com/ucb-bar/berkeley-softfloat-3.git
