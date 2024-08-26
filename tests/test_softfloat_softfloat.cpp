@@ -21,8 +21,7 @@ extern "C" {
 using namespace std::placeholders;
 using namespace FfUtils;
 
-//constexpr i32 kNumIterations = 200000;
-constexpr i32 kNumIterations = 10000;
+constexpr i32 kNumIterations = 200000;
 constexpr i32 kRngSeed = 42;
 
 SoftFloat ff;

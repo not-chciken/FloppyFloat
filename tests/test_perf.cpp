@@ -119,13 +119,6 @@ void DoTest(std::string name, FloppyFloat& ff, FFFUNC ff_func, SFFUNC sf_func) {
 
   begin = std::chrono::steady_clock::now();
   for (size_t i = 0; i < kNumIterations; ++i) {
-    // if(rm == FloppyFloat::kRoundTiesToEven) {
-    //   [[maybe_unused]] auto ff_result = ff.Add<FT, FloppyFloat::kRoundTiesToEven>(valuefa, valuefb);
-    // } else  if(rm == FloppyFloat::kRoundTiesToAway) {
-    //   [[maybe_unused]] auto ff_result = ff.Add<FT, FloppyFloat::kRoundTiesToAway>(valuefa, valuefb);
-    // } else  if(rm == FloppyFloat::kRoundTowardPositive) {
-    //   [[maybe_unused]] auto ff_result = ff.Add<FT, FloppyFloat::kRoundTowardPositive>(valuefa, valuefb);
-    // }
     if constexpr (args == 1) [[maybe_unused]]
       auto ff_result = ff_func(valuefa);
     if constexpr (args == 2) [[maybe_unused]]
@@ -152,7 +145,7 @@ void DoTest(std::string name, FloppyFloat& ff, FFFUNC ff_func, SFFUNC sf_func) {
 
 int main() {
   FloppyFloat ff;
-  ff.SetupTox86();
+  ff.SetupToX86();
 
   {
     auto ff_func = std::bind(&FloppyFloat::Add<f32>, ff, _1, _2);

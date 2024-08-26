@@ -21,8 +21,7 @@ extern "C" {
 using namespace std::placeholders;
 using namespace FfUtils;
 
-//constexpr i32 kNumIterations = 200000;
-constexpr i32 kNumIterations = 10000;
+constexpr i32 kNumIterations = 200000;
 constexpr i32 kRngSeed = 42;
 
 FloppyFloat ff;
@@ -302,16 +301,16 @@ TEST_MACRO_1(F32ToF16, static_cast<f16 (FloppyFloat::*)(f32)>(&FloppyFloat::F32T
 TEST_MACRO_1(F32ToF16, static_cast<f16 (FloppyFloat::*)(f32)>(&FloppyFloat::F32ToF16), f32_to_f16, f32, 3, RoundTowardNegative)
 TEST_MACRO_1(F32ToF16, static_cast<f16 (FloppyFloat::*)(f32)>(&FloppyFloat::F32ToF16), f32_to_f16, f32, 4, RoundTowardZero)
 TEST_MACRO_1(F32ToF64, static_cast<f64 (FloppyFloat::*)(f32)>(&FloppyFloat::F32ToF64), f32_to_f64, f32, 0, )
-TEST_MACRO_1(F64ToF16, static_cast<f16 (FloppyFloat::*)(f64)>(&FloppyFloat::F64ToF16), f64_to_f16, f64, 0, RoundTiesToEven)
-TEST_MACRO_1(F64ToF16, static_cast<f16 (FloppyFloat::*)(f64)>(&FloppyFloat::F64ToF16), f64_to_f16, f64, 1, RoundTiesToAway)
-TEST_MACRO_1(F64ToF16, static_cast<f16 (FloppyFloat::*)(f64)>(&FloppyFloat::F64ToF16), f64_to_f16, f64, 2, RoundTowardPositive)
-TEST_MACRO_1(F64ToF16, static_cast<f16 (FloppyFloat::*)(f64)>(&FloppyFloat::F64ToF16), f64_to_f16, f64, 3, RoundTowardNegative)
-TEST_MACRO_1(F64ToF16, static_cast<f16 (FloppyFloat::*)(f64)>(&FloppyFloat::F64ToF16), f64_to_f16, f64, 4, RoundTowardZero)
-TEST_MACRO_1(F64ToF32, static_cast<f32 (FloppyFloat::*)(f64)>(&FloppyFloat::F64ToF32), f64_to_f32, f64, 0, RoundTiesToEven)
-TEST_MACRO_1(F64ToF32, static_cast<f32 (FloppyFloat::*)(f64)>(&FloppyFloat::F64ToF32), f64_to_f32, f64, 1, RoundTiesToAway)
-TEST_MACRO_1(F64ToF32, static_cast<f32 (FloppyFloat::*)(f64)>(&FloppyFloat::F64ToF32), f64_to_f32, f64, 2, RoundTowardPositive)
-TEST_MACRO_1(F64ToF32, static_cast<f32 (FloppyFloat::*)(f64)>(&FloppyFloat::F64ToF32), f64_to_f32, f64, 3, RoundTowardNegative)
-TEST_MACRO_1(F64ToF32, static_cast<f32 (FloppyFloat::*)(f64)>(&FloppyFloat::F64ToF32), f64_to_f32, f64, 4, RoundTowardZero)
+TEST_MACRO_1(F64ToF16, static_cast<f16 (SoftFloat::*)(f64)>(&SoftFloat::F64ToF16), f64_to_f16, f64, 0, RoundTiesToEven)
+TEST_MACRO_1(F64ToF16, static_cast<f16 (SoftFloat::*)(f64)>(&SoftFloat::F64ToF16), f64_to_f16, f64, 1, RoundTiesToAway)
+TEST_MACRO_1(F64ToF16, static_cast<f16 (SoftFloat::*)(f64)>(&SoftFloat::F64ToF16), f64_to_f16, f64, 2, RoundTowardPositive)
+TEST_MACRO_1(F64ToF16, static_cast<f16 (SoftFloat::*)(f64)>(&SoftFloat::F64ToF16), f64_to_f16, f64, 3, RoundTowardNegative)
+TEST_MACRO_1(F64ToF16, static_cast<f16 (SoftFloat::*)(f64)>(&SoftFloat::F64ToF16), f64_to_f16, f64, 4, RoundTowardZero)
+TEST_MACRO_1(F64ToF32, static_cast<f32 (SoftFloat::*)(f64)>(&SoftFloat::F64ToF32), f64_to_f32, f64, 0, RoundTiesToEven)
+TEST_MACRO_1(F64ToF32, static_cast<f32 (SoftFloat::*)(f64)>(&SoftFloat::F64ToF32), f64_to_f32, f64, 1, RoundTiesToAway)
+TEST_MACRO_1(F64ToF32, static_cast<f32 (SoftFloat::*)(f64)>(&SoftFloat::F64ToF32), f64_to_f32, f64, 2, RoundTowardPositive)
+TEST_MACRO_1(F64ToF32, static_cast<f32 (SoftFloat::*)(f64)>(&SoftFloat::F64ToF32), f64_to_f32, f64, 3, RoundTowardNegative)
+TEST_MACRO_1(F64ToF32, static_cast<f32 (SoftFloat::*)(f64)>(&SoftFloat::F64ToF32), f64_to_f32, f64, 4, RoundTowardZero)
 
 TEST_MACRO_FTOI(F16ToI32, static_cast<i32 (FloppyFloat::*)(f16)>(&FloppyFloat::F16ToI32), f16_to_i32, f16, 0, RoundTiesToEven)
 TEST_MACRO_FTOI(F16ToI32, static_cast<i32 (FloppyFloat::*)(f16)>(&FloppyFloat::F16ToI32), f16_to_i32, f16, 1, RoundTiesToAway)
