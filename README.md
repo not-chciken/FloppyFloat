@@ -20,15 +20,15 @@ Opposed to many soft float libraries, FloppyFloat does not rely on global state/
 Hence, you can also use it to easily model heterogeneous systems.
 
 ## How Much Faster Is It?
-That pretty much depends on the used hardware and the executed instructions.
-For an AMD Threadripper 3990X you should got the following results:
+That pretty much depends on the used hardware, the executed instructions and rounding modes, and status of the exception flags.
+Assuming a likely scenario with default rounding modes, you should get the following results on an AMD Threadripper 3990X:
 
 ```mermaid
 xychart-beta horizontal
     title "FloppyFloat Speedup over Berkeley SoftFloat"
-    x-axis [Addf64, Subf64, Mulf64, Divf64, Sqrtf64, Fmaf64, F64ToU32, F64ToFI64]
+    x-axis [Addf64, Subf64, Mulf64, Divf64, Sqrtf64, Fmaf64, F64ToU32, F64ToU64, F64ToI32, F64ToI64]
     y-axis "Speedup" 1 --> 6
-    bar [3.05, 3.41, 3.71, 4.10, 5.50, 5.31, 1.44, 1.43]
+    bar [3.05, 3.41, 3.71, 4.10, 5.50, 5.31, 1.44, 1.28, 2.13, 1.43]
 ```
 In general, heavy arithmetic instructions (e.g., Sqrtf64) see greater speedups than lightweight comparison or conversion instructions (e.g., F64ToU32).
 
@@ -109,11 +109,11 @@ The following tables shows FloppyFloat functions and their corresponding ISA ins
 | U64ToF64             | FCVT.D.LU | -           | UCVTF  |
 | Class\<f64\>         | FCLASS.D  | -           | -      |
 
-(1): Compiled code for x86 SSE resorts to CVTSS2SI for F32ToUxx.
-(2): x86 SSE uses UCOMISS to achieve a the same functionality.
-(3): ARM64 uses FCMP and FCMPE.
-(4): ARM64 provides FMAXNM/FMINNM and FMAX/FMIN
-(5): Compiled code for x86 SSE resorts to CVTSD2SI for F64ToUxx.
+(1): Compiled code for x86 SSE resorts to CVTSS2SI for F32ToUxx.<br>
+(2): x86 SSE uses UCOMISS to achieve a the same functionality.<br>
+(3): ARM64 uses FCMP and FCMPE.<br>
+(4): ARM64 provides FMAXNM/FMINNM and FMAX/FMIN.<br>
+(5): Compiled code for x86 SSE resorts to CVTSD2SI for F64ToUxx.<br>
 
 ## Build
 FloppyFloat follows a vanilla CMake build process:
@@ -130,14 +130,37 @@ Besides GoogleTest for testing, there are no third-party dependencies.
 You only need a fairly recent compiler that supports at least C++23 and 128-bit datatypes.
 
 ## Usage
-Despite using the host's FPU, FloppyFloat can be configured to a certain extent.
-Here's an example:
+The following code highlights the usage of FloppyFloat using a predefined RISC-V setup.
+Note that you can either use a dynamic rounding mode or a static rounding mode when executing the functions.
+If you are using a dynamic rounding, the usage of the `FLOPPY_FLOAT_FUNC` macro is highly recommended if performance is of great concern.
+
+```c++
+f32 a, b;
+FloppyFloat ff;
+ff.SetupToRiscv();
+
+ff.rounding_mode = FloppyFloat::kRoundTiesToEven;
+
+f32 result;
+
+// Dynamic rounding mode - slow variant.
+result = ff.Mul<f32>(a, b);
+
+// Dynamic rounding mode - fast variant.
+FLOPPY_FLOAT_FUNC_2(result, ff.rounding_mode, ff.Mul, f32, a, b)
+
+// Static rounding mode.
+result = ff.Mul<f32, FloppyFloat::kRoundTiesToEven>(a, b);
+```
+
+Besides predefined setups, you can also freely configure many properties such as NaN propagation schemes,
+canonical qNaN values, tininess detection, and so forth.
+
 ```c++
 FloppyFloat ff;
 ff.nan_propagation_scheme = FloppyFloat::NanPropX86sse;
 ff.SetQnan<f32>(0xffc00000);
-
-f32 result = ff.Mul<f32, FloppyFloat::kRoundTowardZero>(a, b);
+ff.tininess_before_rounding = true;
 ```
 
 ## Things You Need To Take Care Of
