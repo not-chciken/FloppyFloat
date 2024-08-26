@@ -1529,6 +1529,30 @@ i32 FloppyFloat::F64ToI32(f64 a) {
 }
 
 template <FloppyFloat::RoundingMode rm>
+f16 FloppyFloat::F64ToF16(f64 a) {
+  RmGuard(this, rm);
+  return SoftFloat::F64ToF16(a);
+}
+
+template f16 FloppyFloat::F64ToF16<FloppyFloat::kRoundTiesToEven>(f64 a);
+template f16 FloppyFloat::F64ToF16<FloppyFloat::kRoundTowardPositive>(f64 a);
+template f16 FloppyFloat::F64ToF16<FloppyFloat::kRoundTowardNegative>(f64 a);
+template f16 FloppyFloat::F64ToF16<FloppyFloat::kRoundTowardZero>(f64 a);
+template f16 FloppyFloat::F64ToF16<FloppyFloat::kRoundTiesToAway>(f64 a);
+
+template <FloppyFloat::RoundingMode rm>
+f32 FloppyFloat::F64ToF32(f64 a) {
+  RmGuard(this, rm);
+  return SoftFloat::F64ToF32(a);
+}
+
+template f32 FloppyFloat::F64ToF32<FloppyFloat::kRoundTiesToEven>(f64 a);
+template f32 FloppyFloat::F64ToF32<FloppyFloat::kRoundTowardPositive>(f64 a);
+template f32 FloppyFloat::F64ToF32<FloppyFloat::kRoundTowardNegative>(f64 a);
+template f32 FloppyFloat::F64ToF32<FloppyFloat::kRoundTowardZero>(f64 a);
+template f32 FloppyFloat::F64ToF32<FloppyFloat::kRoundTiesToAway>(f64 a);
+
+template <FloppyFloat::RoundingMode rm>
 i32 FloppyFloat::F64ToI32(f64 a) {
   if (IsNan(a)) [[unlikely]] {
     invalid = true;

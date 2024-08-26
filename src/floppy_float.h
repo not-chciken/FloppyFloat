@@ -99,6 +99,11 @@ class FloppyFloat : public SoftFloat {
   FfUtils::f64 F32ToF64(FfUtils::f32 a);
 
   template <RoundingMode rm>
+  FfUtils::f16 F64ToF16(FfUtils::f64 a);
+  template <RoundingMode rm>
+  FfUtils::f32 F64ToF32(FfUtils::f64 a);
+
+  template <RoundingMode rm>
   FfUtils::i32 F64ToI32(FfUtils::f64 a);
   FfUtils::i32 F64ToI32(FfUtils::f64 a);
 
