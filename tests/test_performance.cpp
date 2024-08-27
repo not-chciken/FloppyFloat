@@ -20,7 +20,7 @@
 #include "utils.h"
 
 extern "C" {
-#include "softfloat/softfloat.h"
+#include "softfloat.h"
 }
 
 using namespace std::placeholders;
