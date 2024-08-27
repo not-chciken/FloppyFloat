@@ -2,7 +2,7 @@
 
 A floating point library for instruction set simulators.
 
-## What can it be used for?
+## What Can It Be Used For?
 FloppyFloat is primarily designed as a faster alternative to soft float libraries in simulator environments.
 Soft float libraries, such as [Berkeley SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) or [SoftFP](https://bellard.org/softfp/),
 compute floating point instructions purely by integer arithmetic, which is a slow and painful process.
@@ -15,7 +15,7 @@ Hence, you could even use it on systems like the [XuanTie C910](https://www.risc
 which break IEEE 754 compliance by not setting floating point exception flags in certain cases.
 
 Currently, FloppyFloat is able to mimic x86 SSE, ARM64, and RISC-V FP characteristics.
-It should work on several host systems (the system that is executing the simulation), including x64, ARN, RISC-V, PowerPC, etc.
+It should work on several host systems (the system that is executing the simulation), including x86, ARM, RISC-V, PowerPC, etc.
 FloppyFloat also does not rely on global state/variables, which allows it to easily model heterogeneous systems.
 
 ## How Much Faster Is It?
@@ -24,7 +24,7 @@ Assuming a likely scenario with RoundTiesToEven, you should get the following re
 
 ```mermaid
 xychart-beta horizontal
-    title "FloppyFloat Speedup over Berkeley SoftFloat"
+    title "FloppyFloat Speedup Over Berkeley SoftFloat"
     x-axis [Addf64, Subf64, Mulf64, Divf64, Sqrtf64, Fmaf64, F64ToU32, F64ToU64, F64ToI32, F64ToI64]
     y-axis "Speedup" 1 --> 6
     bar [3.05, 3.41, 3.71, 4.10, 5.50, 5.31, 1.44, 1.28, 2.13, 1.43]
@@ -51,7 +51,7 @@ The following table shows FloppyFloat functions and their corresponding ISA inst
 | F16ToU64             | FCVT.LU.H | -           | FCVTxU |
 | F16ToF32             | FCVT.S.H  | -           | FCVT   |
 | F16ToF64             | FCVT.D.H  | -           | FCVT   |
-| Class\<f16\>         | FCLASS.H  | -           | -      |
+| Class\<f16\>         | FCLASS.H  | (6)         | -      |
 | MaximumNumber\<f16\> | FMAX.H    | -           | (4)    |
 | MinimumNumber\<f16\> | FMIN.H    | -           | (4)    |
 | Add\<f32\>           | FADD.S    | ADDSS       | FADD   |
@@ -72,7 +72,7 @@ The following table shows FloppyFloat functions and their corresponding ISA inst
 | U32ToF16             | FCVT.H.WU | -           | UCVTF  |
 | U32ToF32             | FCVT.S.WU | -           | UCVTF  |
 | U32ToF64             | FCVT.D.WU | -           | UCVTF  |
-| Class\<ff32\>        | FCLASS.S  | -           | -      |
+| Class\<ff32\>        | FCLASS.S  | (6)         | -      |
 | Eq\<f32\>            | FEQ.S     | (2)         | (3)    |
 | Lt\<f32\>            | FLT.S     | (2)         | (3)    |
 | Le\<f32\>            | FLE.S     | (2)         | (3)    |
@@ -105,13 +105,14 @@ The following table shows FloppyFloat functions and their corresponding ISA inst
 | U64ToF16             | FCVT.H.LU | -           | UCVTF  |
 | U64ToF32             | FCVT.S.LU | -           | UCVTF  |
 | U64ToF64             | FCVT.D.LU | -           | UCVTF  |
-| Class\<f64\>         | FCLASS.D  | -           | -      |
+| Class\<f64\>         | FCLASS.D  | (6)         | -      |
 
 (1): Compiled code for x86 SSE resorts to CVTSS2SI for F32ToUxx.<br>
 (2): x86 SSE uses UCOMISS to achieve a the same functionality.<br>
-(3): ARM64 uses FCMP and FCMPE.<br>
+(3): ARM64 uses comparison functions (e.g., FCMP or FCMPE) which set bits in the PSTATE register.<br>
 (4): ARM64 provides FMAXNM/FMINNM and FMAX/FMIN.<br>
 (5): Compiled code for x86 SSE resorts to CVTSD2SI for F64ToUxx.<br>
+(6): Only available in x86 AVX512 as VFPCLASSxx.<br>
 
 ## Build
 FloppyFloat follows a vanilla CMake build process:
@@ -173,10 +174,10 @@ ff.tininess_before_rounding = true;
 If you are integrating FloppyFloat into a simulator, there are still some FP related things you need to take care of.
 For RISC.V, this primarily concerns NaN boxing.
 
-## How does it work?
+## How Does It Work?
 Coding, algorithms, and a bit of math.
 For a detailed explanation see [this blog post](https://www.chciken.com/simulation/2023/11/12/fast-floating-point-simulation.html).
 
 ## Issues
 - ARM's FPCR.DN = 0 needs to be implemented.
-- On x86 Windows systems without FMA extension, MSVC uses a broken `std::fma`, which also affects FloppyFloat.
+- On x86 Windows systems without FMA extension, MSVC uses a broken `std::fma`, which also affects the results of FloppyFloat.
