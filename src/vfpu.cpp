@@ -106,6 +106,7 @@ Vfpu::Vfpu() {
   SetQnan<f64>(0x7ff8000000000000ull);
   ClearFlags();
   tininess_before_rounding = false;
+  rounding_mode = kRoundTiesToEven;
 }
 
 void Vfpu::ClearFlags() {
