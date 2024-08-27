@@ -1,9 +1,9 @@
 # FloppyFloat
 
-A faster than soft float floating point library.
+A floating point library for instruction set simulators.
 
 ## What can it be used for?
-FloppyFloat is primarly designed as a faster alternative to soft float libraries in simulator environments.
+FloppyFloat is primarily designed as a faster alternative to soft float libraries in simulator environments.
 Soft float libraries, such as [Berkeley SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) or [SoftFP](https://bellard.org/softfp/),
 compute floating point instructions purely by integer arithmetic, which is a slow and painful process.
 As most computers come with an FPU, computing results and exception flags by floating point arithmetic is way faster.
@@ -11,17 +11,16 @@ This is why FloppyFloat uses the host's FPU most of the time, and only resorts t
 
 FloppyFloat only relies on correct IEEE 754 floating point results in round to nearest mode.
 It's not relying on floating point exceptions flags, particular NaN values, rounding modes, tininess detection before or after rounding, and so forth.
-Hence, you can even use it on systems like the [XuanTie C910](https://www.riscfive.com/2023/03/09/t-head-xuantie-c910-risc-v/),
-which break IEEE 754 compliance by not setting floating point exception flags in certai cases.
+Hence, you could even use it on systems like the [XuanTie C910](https://www.riscfive.com/2023/03/09/t-head-xuantie-c910-risc-v/),
+which break IEEE 754 compliance by not setting floating point exception flags in certain cases.
 
 Currently, FloppyFloat is able to mimic x86 SSE, ARM64, and RISC-V FP characteristics.
 It should work on several host systems (the system that is executing the simulation), including x64, ARN, RISC-V, PowerPC, etc.
-Opposed to many soft float libraries, FloppyFloat does not rely on global state/variables.
-Hence, you can also use it to easily model heterogeneous systems.
+FloppyFloat also does not rely on global state/variables, which allows it to easily model heterogeneous systems.
 
 ## How Much Faster Is It?
 That pretty much depends on the used hardware, the executed instructions and rounding modes, and status of the exception flags.
-Assuming a likely scenario with default rounding modes, you should get the following results on an AMD Threadripper 3990X:
+Assuming a likely scenario with RoundTiesToEven, you should get the following results on an AMD Threadripper 3990X:
 
 ```mermaid
 xychart-beta horizontal
@@ -33,8 +32,7 @@ xychart-beta horizontal
 In general, heavy arithmetic instructions (e.g., Sqrtf64) see greater speedups than lightweight comparison or conversion instructions (e.g., F64ToU32).
 
 ## Features
-The following tables shows FloppyFloat functions and their corresponding ISA instructions.
-
+The following table shows FloppyFloat functions and their corresponding ISA instructions.
 
 | FloatFunction        | RISC-V    | x86 SSE     | ARM64  |
 |----------------------|-----------|-------------|--------|
@@ -135,26 +133,34 @@ Note that you can either use a dynamic rounding mode or a static rounding mode w
 If you are using a dynamic rounding, the usage of the `FLOPPY_FLOAT_FUNC` macro is highly recommended if performance is of great concern.
 
 ```c++
-f32 a, b;
-FloppyFloat ff;
-ff.SetupToRiscv();
+#include <iostream>
 
-ff.rounding_mode = FloppyFloat::kRoundTiesToEven;
+#include "floppy_float.h"
 
-f32 result;
+using namespace FfUtils;
 
-// Dynamic rounding mode - slow variant.
-result = ff.Mul<f32>(a, b);
+int main() {
+  f32 a{5.5f}, b{3.25f}, result;
 
-// Dynamic rounding mode - fast variant.
-FLOPPY_FLOAT_FUNC_2(result, ff.rounding_mode, ff.Mul, f32, a, b)
+  FloppyFloat ff;
+  ff.SetupToRiscv();
+  ff.rounding_mode = FloppyFloat::kRoundTiesToEven;
 
-// Static rounding mode.
-result = ff.Mul<f32, FloppyFloat::kRoundTiesToEven>(a, b);
+  // Dynamic rounding mode - slow variant.
+  result = ff.Mul<f32>(a, b);
+
+  // Dynamic rounding mode - fast variant.
+  FLOPPY_FLOAT_FUNC_2(result, ff.rounding_mode, ff.Mul, f32, a, b)
+
+  // Static rounding mode.
+  result = ff.Mul<f32, FloppyFloat::kRoundTiesToEven>(a, b);
+
+  std::cout << a << " + " << b << " = " << result << std::endl;
+}
 ```
 
-Besides predefined setups, you can also freely configure many properties such as NaN propagation schemes,
-canonical qNaN values, tininess detection, and so forth.
+Besides predefined setups, you can also freely configure many properties, such as NaN propagation schemes,
+canonical qNaN values, tininess detection, etc.
 
 ```c++
 FloppyFloat ff;
@@ -173,10 +179,4 @@ For a detailed explanation see [this blog post](https://www.chciken.com/simulati
 
 ## Issues
 - ARM's FPCR.DN = 0 needs to be implemented.
-- `Fma` and `Sqrt` for f16 inherits the incorrect rounding problem of glibc (calculates the result as f32 and then casts to f16). Currently, this is fixed by soft float fall back,
-For instance,
-fma<f16>(a=-854, b=-28, c=1.6689e-05)
-standard library result: 23904
-correct result: 23920
-a*b = 23912
-a*b+c = 23912.000016689
+- On x86 Windows systems without FMA extension, MSVC uses a broken `std::fma`, which also affects FloppyFloat.
