@@ -303,11 +303,11 @@ FT GetRScaled(FT r) {
 template <typename FT>
 constexpr FT ResidualLimit() {
   if constexpr (std::is_same_v<FT, f16>) {
-    return 32.f16;  // 2**5
+    return 0x1p5f16;
   } else if constexpr (std::is_same_v<FT, f32>) {
-    return 20282409603651670423947251286016.f32;  // 2**104
+    return 0x1p104f32;
   } else if constexpr (std::is_same_v<FT, f64>) {
-    return std::bit_cast<f64>(0x7de0000100000000ull);  // 2**991
+    return 0x1p971f64;
   }
 }
 
